@@ -6,7 +6,6 @@
 import anthropicEngineeringRss from "./anthropic-engineering-rss/anthropic-engineering-rss.ts";
 import asanaEngineeringRss from "./asana-engineering-rss/asana-engineering-rss.ts";
 import balkonQaRss from "./balkon-qa-rss/balkon-qa-rss.ts";
-import doordashEngineeringRss from "./doordash-engineering-rss/doordash-engineering-rss.ts";
 import figmaEngineeringRss from "./figma-engineering-rss/figma-engineering-rss.ts";
 import filmspotlightRss from "./filmspotlight-rss/filmspotlight-rss.ts";
 import harveyTechnicalRss from "./harvey-technical-rss/harvey-technical-rss.ts";
@@ -43,7 +42,6 @@ const feeds: Record<string, Handler> = {
   "anthropic-engineering-rss": anthropicEngineeringRss,
   "asana-engineering-rss": asanaEngineeringRss,
   "balkon-qa-rss": balkonQaRss,
-  "doordash-engineering-rss": doordashEngineeringRss,
   "figma-engineering-rss": figmaEngineeringRss,
   "filmspotlight-rss": filmspotlightRss,
   "harvey-technical-rss": harveyTechnicalRss,
