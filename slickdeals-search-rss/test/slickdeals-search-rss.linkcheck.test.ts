@@ -22,7 +22,6 @@ import handler, {
   extractDeals,
   fetchDeals,
   parseOptions,
-  resolveImageTypes,
   windowComplete,
 } from "../slickdeals-search-rss.ts";
 import { assertAllServed, liveTest, sampleOf } from "../../common/linkcheck.ts";
@@ -56,33 +55,32 @@ liveTest("every deal link resolves", async () => {
   );
 });
 
-liveTest(
-  "a sample of thumbnails resolve, and get their real type",
-  async () => {
-    // FreshRSS renders an enclosure as an <img> based on exactly this type, and
-    // thumbnails are a mix of JPEG and PNG behind the same ".thumb" suffix.
-    const deals = await fetchDeals(opts("pool=40"));
-    const picked = sampleOf(
-      deals.filter((d) => d.image),
-      5,
+liveTest("a sample of thumbnails resolve, and are images", async () => {
+  // The feed labels every thumbnail image/jpeg without asking. That only holds
+  // up while they are images a browser can sniff; this catches the CDN starting
+  // to serve something else behind the same ".thumb" suffix.
+  const deals = await fetchDeals(opts("pool=40"));
+  const picked = sampleOf(
+    deals.filter((d) => d.image),
+    5,
+  );
+  assert(picked.length > 0, "no thumbnails to check");
+  await assertAllServed(
+    picked.map((d) => d.image),
+    "slickdeals thumbnails",
+  );
+  for (const d of picked) {
+    const res = await fetch(d.image, { method: "HEAD" });
+    const type = res.headers.get("content-type")?.split(";")[0].trim();
+    await res.body?.cancel();
+    assert(
+      ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+        type ?? "",
+      ),
+      `${d.image} is ${type} — not a format browsers sniff from an <img>`,
     );
-    assert(picked.length > 0, "no thumbnails to check");
-    await assertAllServed(
-      picked.map((d) => d.image),
-      "slickdeals thumbnails",
-    );
-    for (const d of await resolveImageTypes(picked)) {
-      const res = await fetch(d.image, { method: "HEAD" });
-      const type = res.headers.get("content-type")?.split(";")[0].trim();
-      await res.body?.cancel();
-      assertEquals(d.imageType, type, `${d.image} resolved to the wrong type`);
-      assert(
-        ["image/jpeg", "image/png"].includes(type ?? ""),
-        `${d.image} is ${type} — a new format the CDN now serves`,
-      );
-    }
-  },
-);
+  }
+});
 
 liveTest("the API still returns the three count fields", async () => {
   // minVotes/minViews/minComments are pure client-side filters. If any of these

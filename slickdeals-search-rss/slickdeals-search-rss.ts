@@ -162,8 +162,6 @@ export interface Deal {
   extra: string;
   url: string;
   image: string;
-  /** The thumbnail's media type, once resolveImageTypes has asked the CDN. */
-  imageType?: string;
   ts: number | null;
   author: string;
   store: string;
@@ -688,11 +686,15 @@ export function buildFeed(
     };
     if (d.author) item.author = [{ name: d.author }];
     if (d.image) {
-      // FreshRSS renders an enclosure as an <img> based on exactly this type.
-      // JPEG when unresolved: it is what nearly every thumbnail is.
+      // Thumbnail URLs end in ".thumb", which names no format. Nearly all are
+      // JPEG; about 3 in 100 are PNG (measured 2026-11-08), and nothing in the
+      // API or URL tells them apart. Asking the CDN cost one request per item,
+      // which is not worth it: FreshRSS shows any image/* enclosure as an <img>,
+      // and browsers sniff the real format. A fixed type also keeps the item's
+      // hash stable, where a lookup that sometimes timed out did not.
       item.image = {
         url: d.image,
-        type: d.imageType ?? "image/jpeg",
+        type: "image/jpeg",
         length: 0,
       };
     }
@@ -704,44 +706,6 @@ export function buildFeed(
 /* -------------------------------------------------------------------------- */
 /* handler                                                                     */
 /* -------------------------------------------------------------------------- */
-
-/** How long to wait on the CDN for one thumbnail's type before assuming JPEG. */
-const IMAGE_TIMEOUT_MS = 3000;
-
-/** How many thumbnails to ask about at once. */
-const IMAGE_CONCURRENCY = 10;
-
-/**
- * Asks the CDN what each thumbnail actually is. Every Slickdeals thumbnail URL
- * ends in ".thumb", which says nothing about its contents: most are JPEG, but
- * about 3 in 100 measured PNG (2026-11-08), and nothing in the API or the URL
- * tells them apart. Run on the feed's own items only, after filtering, so it
- * costs one HEAD per item shown rather than per row fetched. A failed or
- * non-image answer leaves the type unset, and the feed falls back to JPEG.
- */
-export async function resolveImageTypes(deals: Deal[]): Promise<Deal[]> {
-  const out = deals.map((d) => ({ ...d }));
-  const todo = out.filter((d) => d.image);
-  for (let i = 0; i < todo.length; i += IMAGE_CONCURRENCY) {
-    await Promise.all(
-      todo.slice(i, i + IMAGE_CONCURRENCY).map(async (d) => {
-        try {
-          const res = await fetch(d.image, {
-            method: "HEAD",
-            headers: { "user-agent": UA },
-            signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
-          });
-          await res.body?.cancel();
-          const type = res.headers.get("content-type")?.split(";")[0].trim();
-          if (res.ok && type?.startsWith("image/")) d.imageType = type;
-        } catch {
-          // A thumbnail is not worth failing the feed over.
-        }
-      }),
-    );
-  }
-  return out;
-}
 
 export async function fetchDeals(o: Options): Promise<Deal[]> {
   const res = await fetch(API_URL, {
@@ -773,7 +737,7 @@ export default async function (req: Request): Promise<Response> {
 
   const pool = await fetchDeals(o);
   const complete = windowComplete(pool, o);
-  const deals = await resolveImageTypes(applyFilters(pool, o));
+  const deals = applyFilters(pool, o);
   return new Response(buildFeed(deals, o, new Date(), complete), {
     headers: {
       "content-type": "application/rss+xml; charset=utf-8",

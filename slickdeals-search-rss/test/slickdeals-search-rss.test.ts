@@ -375,18 +375,17 @@ test("items carry a link, a date and a JPEG enclosure", () => {
   assert(xml.includes('type="image/jpeg"'), "enclosure type not declared");
 });
 
-test("a resolved thumbnail type replaces the JPEG default", () => {
-  const o = opts("limit=2");
-  const [png, unresolved] = applyFilters(deals, o).filter((d) => d.image);
-  const xml = buildFeed(
-    [{ ...png, imageType: "image/png" }, unresolved],
-    o,
-    NOW,
-  );
+test("every enclosure is typed image/jpeg, with no lookup", () => {
+  const o = opts("limit=8");
+  const xml = buildFeed(applyFilters(deals, o), o, NOW);
   const types = [...xml.matchAll(/<enclosure[^>]*\stype="([^"]+)"/g)].map(
     (m) => m[1],
   );
-  assertEquals(types, ["image/png", "image/jpeg"]);
+  assert(types.length > 0, "no enclosures emitted");
+  assert(
+    types.every((t) => t === "image/jpeg"),
+    `unexpected types: ${types}`,
+  );
 });
 
 test("stats are in the body by default, and can be turned off", () => {
