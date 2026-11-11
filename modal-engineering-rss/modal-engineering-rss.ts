@@ -20,7 +20,7 @@
  * modal-cdn.com, and SvelteKit does the Sanity call server-side.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://modal.com";
 /** SvelteKit's data route for /blog. */

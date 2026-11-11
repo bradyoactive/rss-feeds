@@ -1,0 +1,12 @@
+{
+  "name": "rss-feeds",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy"
+  },
+  "dependencies": {
+    "feed": "6.0.0"
+  }
+}

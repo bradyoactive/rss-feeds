@@ -21,7 +21,7 @@
  * channel title uses whichever spelling the matched items mostly use.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://lovable.dev";
 const FEED_XML = `${SITE}/blog/rss.xml`;

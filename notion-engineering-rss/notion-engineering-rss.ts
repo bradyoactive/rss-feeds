@@ -14,7 +14,7 @@
  * hero thumbnail are all present in that single HTML payload.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.notion.com";
 const TOPIC_URL = `${SITE}/blog/topic/tech`;

@@ -26,7 +26,7 @@
  *    `type="image//slug"`. Setting `imageType: "image/jpeg"` avoids this.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://asana.com";
 const CATEGORY_URL = `${SITE}/inside-asana/engineering-spotlight`;

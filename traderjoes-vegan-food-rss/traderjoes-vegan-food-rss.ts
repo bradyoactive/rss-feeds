@@ -51,7 +51,7 @@
  * therefore an arbitrarily ordered clump, not a chronology.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 /**
  * The apex, deliberately. See the header — www is bot-blocked to everything

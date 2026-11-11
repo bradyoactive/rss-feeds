@@ -30,7 +30,7 @@
  * and friends are all ignored), and this serves that first page only.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://shopify.engineering";
 const LATEST_URL = `${SITE}/latest`;

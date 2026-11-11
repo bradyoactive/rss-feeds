@@ -17,7 +17,7 @@
  * HTML payload. Only posts tagged "Engineering" make it into the feed.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://stripe.dev";
 const TOPIC_URL = `${SITE}/blog/topic/engineering`;

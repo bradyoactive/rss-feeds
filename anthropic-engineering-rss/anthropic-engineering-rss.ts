@@ -15,7 +15,7 @@
  * carries the exact publication dates in the RSC payload and `<time>` tags.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.anthropic.com";
 const ENGINEERING_URL = `${SITE}/engineering`;

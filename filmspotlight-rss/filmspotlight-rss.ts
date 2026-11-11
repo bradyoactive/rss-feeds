@@ -36,7 +36,7 @@
  * description cannot move an item that a reader has already filed.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://filmspotlight.org";
 const API = `${SITE}/api/analysis/future`;

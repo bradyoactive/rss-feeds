@@ -43,7 +43,7 @@
  * feed's — 17 posts, all 24 of which the feed already covers, and fuller there.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://mistral.ai";
 /** The listing page. Trailing slash required; /news 301s to it. */

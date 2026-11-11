@@ -22,7 +22,7 @@
  * wrapped in its own `{ data: … }` — which is what `unwrap` is for.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://posthog.com";
 const STRAPI = "https://better-animal-d658c56969.strapiapp.com/api/posts";

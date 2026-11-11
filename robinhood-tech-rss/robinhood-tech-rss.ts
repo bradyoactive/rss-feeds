@@ -24,7 +24,7 @@
  * from a rotation. If Robinhood rotates this one the feed 502s and says so.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://robinhood.com";
 const BLOG_PATH = "/us/en/careers/blog";

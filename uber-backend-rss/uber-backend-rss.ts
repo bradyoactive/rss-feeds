@@ -35,7 +35,7 @@
  * from fetching all 120 article pages, which is the pattern these vals dropped.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.uber.com";
 /** The blog is served per country/locale and its URLs carry that prefix. */

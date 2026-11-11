@@ -14,7 +14,7 @@
  * assets are present in the `window.APOLLO_STATE` payload on the blog page.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://eng.snap.com";
 const BLOG_URL = `${SITE}/blog`;

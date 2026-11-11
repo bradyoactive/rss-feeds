@@ -21,7 +21,7 @@
  * id, so the feed keeps working if Hex ever rebuilds the category.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://hex.tech";
 const CATEGORY = "engineering";

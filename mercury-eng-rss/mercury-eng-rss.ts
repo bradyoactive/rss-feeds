@@ -18,7 +18,7 @@
  * Person node is missing on half.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://mercury.com";
 /** Mercury keys the search off the display name, so this is its exact spelling. */

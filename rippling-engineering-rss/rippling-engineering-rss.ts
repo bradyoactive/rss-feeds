@@ -21,7 +21,7 @@
  * them out of at request time and they are baked in as constants.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.rippling.com";
 const ALGOLIA_APP_ID = "6FNAX3TBEF";

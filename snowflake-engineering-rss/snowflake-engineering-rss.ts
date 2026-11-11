@@ -32,7 +32,7 @@
  *    fallback for a card that somehow has no heading component.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.snowflake.com";
 const CATEGORY_URL = `${SITE}/en/blog/engineering/core-platform/`;

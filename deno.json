@@ -1,12 +1,23 @@
 {
   "//": "Fixtures are byte-for-byte captures of someone else's markup. `deno fmt` will happily reindent .html/.json/.xml, which rewrites the exact payload the scrapers are written against and silently empties every feed's test. Keep them out of both fmt and lint.",
+  "nodeModulesDir": "auto",
   "fmt": {
-    "exclude": ["**/*.html", "**/*.json", "**/*.xml"]
+    "exclude": [
+      "**/*.html",
+      "**/*.json",
+      "**/*.xml"
+    ]
   },
   "lint": {
-    "exclude": ["**/*.html", "**/*.json", "**/*.xml"],
+    "exclude": [
+      "**/*.html",
+      "**/*.json",
+      "**/*.xml"
+    ],
     "rules": {
-      "exclude": ["no-import-prefix"]
+      "exclude": [
+        "no-import-prefix"
+      ]
     }
   }
 }

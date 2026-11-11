@@ -82,7 +82,7 @@
  * should.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://slickdeals.net";
 const API_URL = `${SITE}/web-api/search/deals/`;

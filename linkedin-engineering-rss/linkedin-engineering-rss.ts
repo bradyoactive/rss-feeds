@@ -14,7 +14,7 @@
  * author bylines, publication dates, and topic categories.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.linkedin.com";
 const BLOG_URL = `${SITE}/blog/engineering`;

@@ -23,7 +23,7 @@
  * scraper dropped four bylines that this returns.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://www.harvey.ai";
 const BLOG = `${SITE}/blog`;

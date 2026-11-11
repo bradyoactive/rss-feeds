@@ -28,7 +28,7 @@
  *     one (see SIGNED_IN below) and is otherwise the anonymous week.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://balkon.film";
 const SOURCE =
@@ -73,8 +73,11 @@ export interface Screening {
   link: string;
 }
 
-export default async function (req: Request): Promise<Response> {
-  const cookie = Deno.env.get(COOKIE_VAR)?.trim() || undefined;
+export default async function (
+  req: Request,
+  env: Record<string, string | undefined> = {},
+): Promise<Response> {
+  const cookie = env[COOKIE_VAR]?.trim() || undefined;
   let html: string;
   try {
     html = await fetchPage(cookie);

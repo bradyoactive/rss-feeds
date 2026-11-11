@@ -14,7 +14,7 @@
  * title, summary, author byline, publication date, and 16:9 hero image.
  */
 
-import { Feed, type Item } from "npm:feed@6.0.0";
+import { Feed, type Item } from "feed";
 
 const SITE = "https://retool.com";
 const CATEGORY_URL = `${SITE}/blog/category/engineering`;
