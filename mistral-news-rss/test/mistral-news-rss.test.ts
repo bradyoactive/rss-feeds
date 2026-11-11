@@ -36,10 +36,12 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const pageHtml = await readFile(
-  new URL("./mistral-news-page.html", import.meta.url), "utf8",
+  new URL("./mistral-news-page.html", import.meta.url),
+  "utf8",
 );
 const feedXml = await readFile(
-  new URL("./mistral-news-rss.xml", import.meta.url), "utf8",
+  new URL("./mistral-news-rss.xml", import.meta.url),
+  "utf8",
 );
 
 const posts = extractPosts(pageHtml, feedXml);
@@ -55,10 +57,14 @@ const countByCategory = () => {
 
 test("keeps only the two categories it exists for", () => {
   assertEquals(posts.length, 8, "post count");
-  assertEquals(countByCategory(), {
-    Research: 6,
-    Engineering: 2,
-  }, "posts per category");
+  assertEquals(
+    countByCategory(),
+    {
+      Research: 6,
+      Engineering: 2,
+    },
+    "posts per category",
+  );
   // The fixture holds five posts in company/product/solutions. If the filter
   // ever stopped applying, this is the number that would move first.
   assertEquals(
@@ -95,7 +101,10 @@ test("joins the firehose onto the listing by slug", () => {
 test("drops the ?dpl= cache buster from every thumbnail", () => {
   // It changes on every mistral.ai deploy, and FreshRSS hashes the enclosure
   // URL — leaving it on re-unreads the whole feed when Mistral ships anything.
-  assert(posts.every((p) => p.image), "every post has a thumbnail");
+  assert(
+    posts.every((p) => p.image),
+    "every post has a thumbnail",
+  );
   assert(!posts.some((p) => p.image.includes("dpl=")), "no deploy id survives");
   assert(
     posts.every((p) => p.image.startsWith("https://mistral.ai/_astro/")),
@@ -114,7 +123,10 @@ test("descriptions are as sparse as the source, and that is the finding", () => 
     posts.every((p) => p.title && p.author),
     "titles and bylines are total",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
 });
 
 test("names the categories the site actually used, in order", () => {
@@ -167,7 +179,11 @@ test("falls back to the card's date for a post the firehose dropped", () => {
 
 test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("survives markup that is not what we asked for", () => {
@@ -245,10 +261,14 @@ test("sends a cache-control window rather than leaning on the isolate", async ()
 
 test("orders items newest first in the feed too", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
   assertEquals(dates.length, 8, "every item is dated");
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

@@ -59,8 +59,8 @@ liveTest(
           "the software-engineering topic slug changed",
       );
     }
-    const untagged = live.filter((p) =>
-      !p.topics.includes("Software Engineering")
+    const untagged = live.filter(
+      (p) => !p.topics.includes("Software Engineering"),
     );
     if (untagged.length) {
       throw new Error(`${untagged.length} posts came back without the topic`);

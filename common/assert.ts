@@ -15,14 +15,16 @@ export function assert(cond: unknown, msg: string): asserts cond {
 
 /** Identity for primitives, structural for arrays and plain objects. */
 export function assertEquals<T>(actual: T, expected: T, label = "value") {
-  const equal = Object.is(actual, expected) ||
-    (typeof actual === "object" && actual !== null &&
+  const equal =
+    Object.is(actual, expected) ||
+    (typeof actual === "object" &&
+      actual !== null &&
       JSON.stringify(actual) === JSON.stringify(expected));
   if (!equal) {
     throw new Error(
-      `${label}: expected ${JSON.stringify(expected)}, got ${
-        JSON.stringify(actual)
-      }`,
+      `${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(
+        actual,
+      )}`,
     );
   }
 }

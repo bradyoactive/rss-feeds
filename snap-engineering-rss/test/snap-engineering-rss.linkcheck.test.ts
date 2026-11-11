@@ -13,9 +13,7 @@ import {
   sampleOf,
 } from "../../common/linkcheck.ts";
 
-const posts = extractPosts(
-  await fixture(import.meta, "snap-engineering.html"),
-);
+const posts = extractPosts(await fixture(import.meta, "snap-engineering.html"));
 
 liveTest("a sample of post links resolve", async () => {
   const urls = sampleOf(posts.map((p) => postUrl(p.slug)));
@@ -28,10 +26,7 @@ liveTest("a sample of hero thumbnails resolve", async () => {
 });
 
 liveTest("the engineering blog the channel links to exists", async () => {
-  const res = buildFeed(
-    posts,
-    new URL("https://feed.val.run/snap"),
-  );
+  const res = buildFeed(posts, new URL("https://feed.val.run/snap"));
   await assertAllServed(
     [channelLink(await res.text())],
     "snap engineering blog page",
@@ -41,15 +36,12 @@ liveTest("the engineering blog the channel links to exists", async () => {
 liveTest(
   "the live engineering blog still renders CONTENTFUL_RESULTS",
   async () => {
-    const res = await fetch(
-      "https://eng.snap.com/blog",
-      {
-        headers: {
-          "user-agent": "snap-rss-bridge (+https://val.town)",
-          accept: "text/html,application/xhtml+xml",
-        },
+    const res = await fetch("https://eng.snap.com/blog", {
+      headers: {
+        "user-agent": "snap-rss-bridge (+https://val.town)",
+        accept: "text/html,application/xhtml+xml",
       },
-    );
+    });
     if (!res.ok) throw new Error(`blog page: HTTP ${res.status}`);
     const html = await res.text();
     const live = extractPosts(html);

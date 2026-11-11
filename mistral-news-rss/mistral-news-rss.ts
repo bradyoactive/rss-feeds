@@ -92,9 +92,11 @@ export function buildFeed(posts: Post[], url: URL): Response {
 
   const xml = renderRss({
     title: `Mistral News — ${names.join(" & ")}`,
-    description: `Posts in ${
-      names.map((n) => `“${n}”`).join(" or ")
-    } on the Mistral news blog — the category filter mistral.ai/news/rss does not offer.`,
+    description: `Posts in ${names
+      .map((n) => `“${n}”`)
+      .join(
+        " or ",
+      )} on the Mistral news blog — the category filter mistral.ai/news/rss does not offer.`,
     // Mistral's own nav links categories this way. The filter runs in the
     // browser, so a reader who follows it lands on the index either way.
     siteLink: `${PAGE}?categories=${CATEGORIES.join(",")}`,
@@ -147,11 +149,9 @@ export function extractPosts(pageHtml: string, feedXml: string): Post[] {
     // matches on, and the label the site prints. data-categories on the
     // <article> holds the same slugs, but only the chips have the names.
     const categories: string[] = [];
-    for (
-      const m of card.matchAll(
-        /data-category-slug="([^"]*)"[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/g,
-      )
-    ) {
+    for (const m of card.matchAll(
+      /data-category-slug="([^"]*)"[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/g,
+    )) {
       if (CATEGORIES.includes(m[1])) categories.push(str(m[2]));
     }
     if (!categories.length) continue;
@@ -178,9 +178,11 @@ export function extractPosts(pageHtml: string, feedXml: string): Post[] {
 
 /** Every post card on the listing, markup untouched. */
 function cards(html: string): string[] {
-  return html.match(
-    /<article\b[^>]*class="[^"]*\bjs-post\b[^"]*"[^>]*>[\s\S]*?<\/article>/g,
-  ) ?? [];
+  return (
+    html.match(
+      /<article\b[^>]*class="[^"]*\bjs-post\b[^"]*"[^>]*>[\s\S]*?<\/article>/g,
+    ) ?? []
+  );
 }
 
 /** Summaries and publication instants from the firehose, keyed by slug. */
@@ -268,8 +270,8 @@ export function displayNames(posts: Post[]): string[] {
       if (!bySlug.has(slug)) bySlug.set(slug, name);
     }
   }
-  return CATEGORIES.map((slug) => bySlug.get(slug)).filter((n) =>
-    n !== undefined
+  return CATEGORIES.map((slug) => bySlug.get(slug)).filter(
+    (n) => n !== undefined,
   );
 }
 
@@ -334,9 +336,8 @@ function one(re: RegExp, s: string): string {
 function str(v: string): string {
   return v
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(
-      /&#x([0-9a-f]+);/gi,
-      (_, h) => String.fromCodePoint(parseInt(h, 16)),
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) =>
+      String.fromCodePoint(parseInt(h, 16)),
     )
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -347,10 +348,11 @@ function str(v: string): string {
 }
 
 function slugify(s: string): string {
-  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
-    /^-|-$/g,
-    "",
-  );
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**

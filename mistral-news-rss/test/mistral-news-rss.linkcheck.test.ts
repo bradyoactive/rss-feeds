@@ -70,13 +70,15 @@ liveTest(
     const [html, xml] = await Promise.all([get(PAGE), get(FEED)]);
 
     const onPage = new Set(
-      [...html.matchAll(
-        /<article\b[^>]*\bjs-post\b[\s\S]*?<a[^>]*href="\/news\/([^/"]+)\//g,
-      )].map((m) => m[1]),
+      [
+        ...html.matchAll(
+          /<article\b[^>]*\bjs-post\b[\s\S]*?<a[^>]*href="\/news\/([^/"]+)\//g,
+        ),
+      ].map((m) => m[1]),
     );
     const inFeed = new Set(
-      [...xml.matchAll(/<link>[^<]*\/news\/([^/<]+)\/?<\/link>/g)].map((m) =>
-        m[1]
+      [...xml.matchAll(/<link>[^<]*\/news\/([^/<]+)\/?<\/link>/g)].map(
+        (m) => m[1],
       ),
     );
 
@@ -104,7 +106,10 @@ liveTest("the live pair still yields both categories", async () => {
   const names = new Set(live.flatMap((p) => p.categories));
   assertEquals([...names].sort(), ["Engineering", "Research"], "both present");
   assert(live.length >= 20, `only ${live.length} posts survived the filter`);
-  assert(live.every((p) => p.title && p.author && p.image), "fields are total");
+  assert(
+    live.every((p) => p.title && p.author && p.image),
+    "fields are total",
+  );
   assert(
     live.filter((p) => p.ts !== null).length === live.length,
     "the join dated every post",

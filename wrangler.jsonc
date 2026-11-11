@@ -2,5 +2,5 @@
   "name": "rss-feeds",
   "main": "index.ts",
   "compatibility_date": "2026-11-01",
-  "routes": [{ "pattern": "feeds.brady.town", "custom_domain": true }]
+  "routes": [{ "pattern": "feeds.brady.town", "custom_domain": true }],
 }

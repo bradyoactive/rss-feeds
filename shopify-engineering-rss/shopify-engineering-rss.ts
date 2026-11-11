@@ -133,7 +133,8 @@ export function extractPosts(payload: unknown): Post[] {
       author: byline(row),
       image,
       imageType: mediaType(image),
-      topics: (Array.isArray(row.tags) ? row.tags : []).map(str)
+      topics: (Array.isArray(row.tags) ? row.tags : [])
+        .map(str)
         .filter(isTopic),
     });
   }
@@ -177,10 +178,11 @@ function isTopic(tag: string): boolean {
 
 /** The page Shopify publishes for a topic; also what proves it is one. */
 export function topicUrl(topic: string): string {
-  const slug = topic.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
-    /^-|-$/g,
-    "",
-  );
+  const slug = topic
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
   return `${SITE}/topics/${slug}`;
 }
 
@@ -274,7 +276,8 @@ export function decode(payload: unknown): unknown {
   };
 
   // A container's slots are indices; anything else is already the value.
-  const resolve = (item: unknown) => typeof item === "number" ? at(item) : item;
+  const resolve = (item: unknown) =>
+    typeof item === "number" ? at(item) : item;
 
   const remember = <T>(index: number, value: T): T => {
     memo.set(index, value);
@@ -332,7 +335,7 @@ export function renderRss(feed: {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

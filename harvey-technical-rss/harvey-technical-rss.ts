@@ -37,8 +37,7 @@ const DATASET = "production";
 /** Pinned: Sanity dates its API, and an unpinned version is a silent upgrade. */
 const API_VERSION = "v2021-10-21";
 /** apicdn is the cached host; the plain api. host is rate-limited harder. */
-const SANITY_URL =
-  `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
+const SANITY_URL = `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
 /** One request, comfortably clear of the tag's ~41 posts. */
 const PAGE_SIZE = 100;
 

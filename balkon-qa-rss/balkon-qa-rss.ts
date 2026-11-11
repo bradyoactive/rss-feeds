@@ -31,8 +31,7 @@
 import { Feed, type Item } from "feed";
 
 const SITE = "https://balkon.film";
-const SOURCE =
-  `${SITE}/qa?city=nyc&events=qa&date=&theaters=alamo_drafthouse_downtown_brooklyn,alamo_drafthouse_lower_manhattan,amc_empire_25,amc_kips_bay_15,amc_lincoln_square_13,amc_village_7,angelika,film_at_lincoln_center,ifc_center,moma,momi,paris_theater`;
+const SOURCE = `${SITE}/qa?city=nyc&events=qa&date=&theaters=alamo_drafthouse_downtown_brooklyn,alamo_drafthouse_lower_manhattan,amc_empire_25,amc_kips_bay_15,amc_lincoln_square_13,amc_village_7,angelika,film_at_lincoln_center,ifc_center,moma,momi,paris_theater`;
 
 /**
  * How long a reader or CDN may reuse a response. Listings change daily but a
@@ -208,14 +207,16 @@ function readItem(
   dayLabel: string,
 ): Screening | null {
   const film =
-    /<a href="\/film\/([^"]+)"[^>]*class="screening-title"[^>]*>([^<]*)</
-      .exec(item);
+    /<a href="\/film\/([^"]+)"[^>]*class="screening-title"[^>]*>([^<]*)</.exec(
+      item,
+    );
   if (!film) return null;
 
   const filmSlug = film[1];
   const theater =
-    /<span class="theater-name">\s*<a href="\/theater\/([^"]+)"[^>]*>([^<]*)</
-      .exec(item);
+    /<span class="theater-name">\s*<a href="\/theater\/([^"]+)"[^>]*>([^<]*)</.exec(
+      item,
+    );
 
   // Deliberately not captured: the "sold-out" class on a showtime. It flips
   // while the screening sits in the feed, and FreshRSS hashes an item's content
@@ -223,11 +224,9 @@ function readItem(
   // the item for news that is stale by the time it is read.
   const times: string[] = [];
   let link = "";
-  for (
-    const [, href, , inner] of item.matchAll(
-      /<a href="([^"]*)"[^>]*class="showtime([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
-    )
-  ) {
+  for (const [, href, , inner] of item.matchAll(
+    /<a href="([^"]*)"[^>]*class="showtime([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
+  )) {
     // The tag is its own element and is not always "Q&A" — a screening can
     // also carry an "intro". Removing the element rather than the word keeps
     // the time clean and the label intact.
@@ -243,15 +242,16 @@ function readItem(
 
   const guests = [
     ...item.matchAll(/<a class="qa-guest-card"[^>]*>([\s\S]*?)<\/a>/g),
-  ].map(([, card]) => ({
-    name: textOf(card, "qa-guest-card-name"),
-    role: textOf(card, "qa-guest-card-role"),
-    image: decode(/<img[^>]*src="([^"]*)"/.exec(card)?.[1] ?? ""),
-  })).filter((guest) => guest.name);
+  ]
+    .map(([, card]) => ({
+      name: textOf(card, "qa-guest-card-name"),
+      role: textOf(card, "qa-guest-card-role"),
+      image: decode(/<img[^>]*src="([^"]*)"/.exec(card)?.[1] ?? ""),
+    }))
+    .filter((guest) => guest.name);
 
   const meta =
-    /<div class="screening-meta">([\s\S]*?)<\/div>/.exec(item)?.[1] ??
-      "";
+    /<div class="screening-meta">([\s\S]*?)<\/div>/.exec(item)?.[1] ?? "";
 
   return {
     id: `${filmSlug}|${theater?.[1] ?? "unknown"}|${date}`,
@@ -262,10 +262,12 @@ function readItem(
     dayLabel,
     times,
     directors: [...meta.matchAll(/<a[^>]*>([^<]*)<\/a>/g)]
-      .map(([, name]) => decode(name).trim()).filter(Boolean),
+      .map(([, name]) => decode(name).trim())
+      .filter(Boolean),
     blurb: stripTags(
-      /<div class="screening-description[^"]*">([\s\S]*?)<\/div>/.exec(item)
-        ?.[1] ?? "",
+      /<div class="screening-description[^"]*">([\s\S]*?)<\/div>/.exec(
+        item,
+      )?.[1] ?? "",
     ),
     guests,
     link: link || `${SITE}/film/${filmSlug}`,
@@ -289,7 +291,9 @@ function textOf(html: string, className: string): string {
 }
 
 function stripTags(html: string): string {
-  return decode(html.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+  return decode(html.replace(/<[^>]*>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function renderRss(feed: {
@@ -312,8 +316,8 @@ export function renderRss(feed: {
 
   // Soonest first. Every item carries the same date (see below), so the order
   // they are written in is the order a reader shows them in.
-  const items = [...feed.items].sort((a, b) =>
-    a.date.localeCompare(b.date) || a.film.localeCompare(b.film)
+  const items = [...feed.items].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.film.localeCompare(b.film),
   );
 
   for (const s of items) {
@@ -348,8 +352,9 @@ export function renderRss(feed: {
 /** "Wendigo — Film at Lincoln Center · Mon · August 17, 6:30 PM" */
 function titleOf(s: Screening): string {
   const when = [s.dayLabel, s.times.join(" & ")].filter(Boolean).join(", ");
-  return [s.film, s.theater].filter(Boolean).join(" — ") +
-    (when ? ` · ${when}` : "");
+  return (
+    [s.film, s.theater].filter(Boolean).join(" — ") + (when ? ` · ${when}` : "")
+  );
 }
 
 function describe(s: Screening): string {
@@ -357,7 +362,8 @@ function describe(s: Screening): string {
   if (s.guests.length) {
     lines.push(
       "With " +
-        s.guests.map((g) => g.role ? `${g.name} (${g.role})` : g.name)
+        s.guests
+          .map((g) => (g.role ? `${g.name} (${g.role})` : g.name))
           .join(", "),
     );
   }
@@ -378,9 +384,10 @@ const ENTITIES: Record<string, string> = {
 function decode(s: string): string {
   return s.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (whole, body: string) => {
     if (body[0] === "#") {
-      const code = body[1] === "x" || body[1] === "X"
-        ? parseInt(body.slice(2), 16)
-        : parseInt(body.slice(1), 10);
+      const code =
+        body[1] === "x" || body[1] === "X"
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
       return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
     }
     return ENTITIES[body.toLowerCase()] ?? whole;

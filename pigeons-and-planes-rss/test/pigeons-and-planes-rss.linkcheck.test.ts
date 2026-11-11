@@ -21,15 +21,17 @@ liveTest("every post link resolves", async () => {
   // Only 20 posts, so check them all. The slug comes from `alias.current` in
   // Sanity rather than from any URL the site rendered, and the val builds
   // /read/<slug> around it — neither is provable offline.
-  const urls = posts.map((p) =>
-    `https://www.pigeonsandplanes.com/read/${p.slug}`
+  const urls = posts.map(
+    (p) => `https://www.pigeonsandplanes.com/read/${p.slug}`,
   );
   await assertAllServed(urls, "pigeons post links");
 });
 
 liveTest("the site the channel links to exists", async () => {
-  const xml = await buildFeed(posts, new URL("https://feed.val.run/pnp"))
-    .text();
+  const xml = await buildFeed(
+    posts,
+    new URL("https://feed.val.run/pnp"),
+  ).text();
   await assertAllServed([channelLink(xml)], "pigeons site link");
 });
 
@@ -61,9 +63,9 @@ liveTest("the site's Sanity proxy still answers this projection", async () => {
       "authors": authors[]->name
     }`;
   const res = await fetch(
-    `https://www.pigeonsandplanes.com/api/sanity?query=${
-      encodeURIComponent(groq)
-    }`,
+    `https://www.pigeonsandplanes.com/api/sanity?query=${encodeURIComponent(
+      groq,
+    )}`,
     { headers: { accept: "application/json" } },
   );
   if (!res.ok) throw new Error(`sanity proxy: HTTP ${res.status}`);

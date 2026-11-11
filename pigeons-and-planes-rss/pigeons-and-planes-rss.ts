@@ -137,8 +137,8 @@ export function extractPosts(payload: unknown): Post[] {
   const rows = Array.isArray(payload)
     ? payload
     : Array.isArray((payload as { result?: unknown })?.result)
-    ? (payload as { result: unknown[] }).result
-    : [];
+      ? (payload as { result: unknown[] }).result
+      : [];
 
   const bySlug = new Map<string, Post>();
 
@@ -218,7 +218,7 @@ function str(v: unknown): string {
 
 function obj(v: unknown): Record<string, unknown> {
   return typeof v === "object" && v !== null
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : {};
 }
 

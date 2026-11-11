@@ -70,10 +70,11 @@ const CATEGORY_NAME = "Food";
 /** Trader Joe's own spelling of the characteristic, which is what it matches. */
 export const CHARACTERISTIC = "Vegan";
 
-const CATEGORY_URL = `${SITE}/home/products/category/food-${CATEGORY_ID}` +
-  `?filters=${
-    encodeURIComponent(JSON.stringify({ characteristics: [CHARACTERISTIC] }))
-  }`;
+const CATEGORY_URL =
+  `${SITE}/home/products/category/food-${CATEGORY_ID}` +
+  `?filters=${encodeURIComponent(
+    JSON.stringify({ characteristics: [CHARACTERISTIC] }),
+  )}`;
 
 /**
  * One page, sized past the whole listing rather than paginated. 140 products
@@ -90,8 +91,7 @@ const PAGE_SIZE = 500;
  */
 const CACHE_SECONDS = 12 * 60 * 60;
 
-const QUERY =
-  `query VeganFood($categoryId: String!, $characteristic: String!, $pageSize: Int!) {
+const QUERY = `query VeganFood($categoryId: String!, $characteristic: String!, $pageSize: Int!) {
   products(
     filter: {
       category_id: { eq: $categoryId }
@@ -195,12 +195,15 @@ export function buildFeed(listing: Listing, url: URL): Response {
 }
 
 function describeFeed(listing: Listing, complete: boolean): string {
-  const base = `Products tagged “${CHARACTERISTIC}” in the ${CATEGORY_NAME} ` +
+  const base =
+    `Products tagged “${CHARACTERISTIC}” in the ${CATEGORY_NAME} ` +
     `category at Trader Joe's, newest first.`;
   if (complete) return base;
-  return `${base} Showing ${listing.rowCount} of ` +
+  return (
+    `${base} Showing ${listing.rowCount} of ` +
     `${listing.totalCount} matches — the listing has outgrown the val's ` +
-    `page size of ${PAGE_SIZE}, so the oldest products are missing.`;
+    `page size of ${PAGE_SIZE}, so the oldest products are missing.`
+  );
 }
 
 export async function fetchProducts(): Promise<unknown> {
@@ -437,7 +440,9 @@ export function describe(p: Product): string {
     p.size,
     p.origin,
     p.characteristics.join(", "),
-  ].filter(Boolean).join(" · ");
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const tags = p.funTags.length
     ? `<p><em>${esc(p.funTags.join(" · "))}</em></p>`
@@ -450,15 +455,12 @@ export function describe(p: Product): string {
 
 /** For the text this val composes itself; the story is already HTML. */
 function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

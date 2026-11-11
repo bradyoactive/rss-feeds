@@ -162,10 +162,12 @@ export function extractEvents(
     const location = str(row.event_location);
     if (!theaterFilter(location)) continue;
 
-    const screenings = list(row.screenings).map((s) => ({
-      date: str(s.date),
-      appearance: str(s.in_person_appearence),
-    })).filter((s) => s.date);
+    const screenings = list(row.screenings)
+      .map((s) => ({
+        date: str(s.date),
+        appearance: str(s.in_person_appearence),
+      }))
+      .filter((s) => s.date);
     if (!screenings.length) continue;
 
     // Not carried: hit_count. It moves on every page view, and an item whose
@@ -199,8 +201,8 @@ export function renderRss(feed: {
   items: Event[];
 }): string {
   // Newest announcement first, which is what the dates mean here.
-  const items = [...feed.items].sort((a, b) =>
-    (b.createdAt ?? 0) - (a.createdAt ?? 0)
+  const items = [...feed.items].sort(
+    (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
   );
   const dates = items.map((e) => e.createdAt).filter((ts) => ts !== null);
 
@@ -240,13 +242,15 @@ export function renderRss(feed: {
  */
 function describe(e: Event): string {
   const when = e.screenings.map((s) =>
-    s.appearance ? `${s.date} — ${s.appearance}` : s.date
+    s.appearance ? `${s.date} — ${s.appearance}` : s.date,
   );
   return [
     when.length ? `${e.location}: ${when.join("; ")}` : e.location,
     e.description,
     e.rsvp ? `Tickets: ${e.rsvp}` : "",
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function eventUrl(id: number): string {
@@ -262,7 +266,7 @@ function mediaType(url: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

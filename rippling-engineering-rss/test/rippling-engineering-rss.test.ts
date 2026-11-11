@@ -24,7 +24,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
   await readFile(
-    new URL("./rippling-algolia-engineering.json", import.meta.url), "utf8",
+    new URL("./rippling-algolia-engineering.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -33,7 +34,10 @@ const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 test("extracts every Engineering hit from the response", () => {
   assertEquals(posts.length, 43, "post count");
   assertEquals(posts.length, payload.nbHits, "one page covers the hub whole");
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assert(
     posts.every((p) => p.hubs.includes("Engineering")),
     "every post is in Engineering",
@@ -57,11 +61,11 @@ test("parses both publishedDate shapes as UTC", () => {
   // The index holds date-only "2026-03-25" and naive "2025-04-30T11:23:33".
   // Date.parse reads the first as UTC and the second as *local* time, which
   // would shift a post by hours depending on where the val runs.
-  const dateOnly = payload.hits.find((h: { publishedDate: string }) =>
-    !h.publishedDate.includes("T")
+  const dateOnly = payload.hits.find(
+    (h: { publishedDate: string }) => !h.publishedDate.includes("T"),
   );
   const naive = payload.hits.find((h: { publishedDate: string }) =>
-    h.publishedDate.includes("T")
+    h.publishedDate.includes("T"),
   );
   assert(dateOnly && naive, "both shapes still present in the fixture");
 
@@ -152,10 +156,14 @@ test("serves the feed", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
   assertEquals(dates.length, 43, "every item is dated");
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {
@@ -199,10 +207,7 @@ test("renders XML-safe output", () => {
     "item title survives verbatim inside CDATA",
   );
   assert(!xml.includes("]]]]"), "no stray CDATA breakout in ordinary text");
-  assert(
-    xml.includes("<pubDate>"),
-    "RFC-822 pubDate",
-  );
+  assert(xml.includes("<pubDate>"), "RFC-822 pubDate");
   // Control characters are illegal in XML 1.0 and the library does not strip
   // them, so the val must — one anywhere breaks the whole document.
   const dirty = renderRss({

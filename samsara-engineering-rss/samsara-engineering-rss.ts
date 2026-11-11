@@ -230,8 +230,8 @@ export function extractCredentials(html: string): Credentials | null {
     new RegExp(`\\b${name}:"([^"]+)"`).exec(src)?.[1] ?? "";
 
   const spaceId = field(ctfl, "spaceId") || field(html, "ctflProdSpaceId");
-  const accessToken = field(ctfl, "accessToken") ||
-    field(html, "ctflAccessToken");
+  const accessToken =
+    field(ctfl, "accessToken") || field(html, "ctflAccessToken");
   if (!spaceId || !accessToken) return null;
 
   return {
@@ -336,7 +336,7 @@ function fields(item: unknown): Record<string, unknown> {
 
 function obj(v: unknown): Record<string, unknown> {
   return typeof v === "object" && v !== null
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : {};
 }
 

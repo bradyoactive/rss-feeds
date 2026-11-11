@@ -19,7 +19,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const xml = await readFile(
-  new URL("./lovable-blog-rss.xml", import.meta.url), "utf8",
+  new URL("./lovable-blog-rss.xml", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(xml);
 const inside = selectPosts(posts);
@@ -31,7 +32,10 @@ test("reads every item in Lovable's feed", () => {
     (xml.match(/<item>/g) ?? []).length,
     "every item became a post",
   );
-  assert(posts.every((p) => p.link && p.title), "every post has a link/title");
+  assert(
+    posts.every((p) => p.link && p.title),
+    "every post has a link/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.link)).size,
     posts.length,
@@ -149,9 +153,13 @@ test("carries no images, because the source feed has none", () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

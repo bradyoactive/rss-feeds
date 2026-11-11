@@ -46,8 +46,7 @@ export default async function (): Promise<Response> {
     });
   }
 
-  return new Response(
-    xml.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""),
-    { headers: { "content-type": "application/rss+xml; charset=utf-8" } },
-  );
+  return new Response(xml.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""), {
+    headers: { "content-type": "application/rss+xml; charset=utf-8" },
+  });
 }

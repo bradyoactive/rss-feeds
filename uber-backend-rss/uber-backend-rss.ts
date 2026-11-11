@@ -185,8 +185,10 @@ export function extractCategories(payload: unknown): Category[] {
 
 /** The id of the blog category at `slug`, or "" when the tree no longer has it. */
 export function categoryId(categories: Category[], slug: string): string {
-  return categories.find((c) => c.namespace === NAMESPACE && c.slug === slug)
-    ?.id ?? "";
+  return (
+    categories.find((c) => c.namespace === NAMESPACE && c.slug === slug)?.id ??
+    ""
+  );
 }
 
 export function categoryNames(categories: Category[]): Map<string, string> {
@@ -302,7 +304,7 @@ function mediaType(url: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

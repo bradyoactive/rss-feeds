@@ -116,6 +116,7 @@ export async function jsonFixture(
  * slug is not slugify(its name), and Mercury's is plus-encoded.
  */
 export function channelLink(xml: string): string {
-  return /<channel>[\s\S]*?<link>([^<]*)<\/link>/.exec(xml)![1]
+  return /<channel>[\s\S]*?<link>([^<]*)<\/link>/
+    .exec(xml)![1]
     .replace(/&amp;/g, "&");
 }

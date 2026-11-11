@@ -37,7 +37,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./traderjoes-vegan-food.json", import.meta.url), "utf8",
+    new URL("./traderjoes-vegan-food.json", import.meta.url),
+    "utf8",
   ),
 );
 const listing = extractProducts(raw);
@@ -62,10 +63,22 @@ test("reads the published vegan food products and only those", () => {
     products.length,
     "skus are unique",
   );
-  assert(products.every((p) => p.ts !== null), "every product is dated");
-  assert(products.every((p) => p.story), "every product has marketing copy");
-  assert(products.every((p) => p.image), "every product has an image");
-  assert(products.every((p) => p.price), "every product has a price");
+  assert(
+    products.every((p) => p.ts !== null),
+    "every product is dated",
+  );
+  assert(
+    products.every((p) => p.story),
+    "every product has marketing copy",
+  );
+  assert(
+    products.every((p) => p.image),
+    "every product has an image",
+  );
+  assert(
+    products.every((p) => p.price),
+    "every product has a price",
+  );
 });
 
 test("drops the unpublished rows, whose pages 404", () => {
@@ -93,8 +106,9 @@ test("the fields the val reads survive being unpublished", () => {
   // unconditional. If that stops being true the feed needs the fallbacks the
   // Product type already allows for, so pin it.
   const all = raw.data.products.items as Record<string, unknown>[];
-  const gaps = all.filter((r) =>
-    !r.first_published_date || !r.item_story_marketing || !r.primary_image
+  const gaps = all.filter(
+    (r) =>
+      !r.first_published_date || !r.item_story_marketing || !r.primary_image,
   );
   assert(gaps.length > 0, "the payload does have gappy rows");
   assert(
@@ -197,8 +211,9 @@ test("url_key is not the product URL", () => {
   // sku-first ("084084-kanom-dok-mai-chewy-coconut-cakes"), and the resolver
   // only looks for a sku at the *end*, so it 404s. Pin the difference so
   // nobody 'simplifies' productUrl into using the field that is already there.
-  const row = (raw.data.products.items as { sku: string }[])
-    .find((r) => r.sku === "084084") as Record<string, unknown>;
+  const row = (raw.data.products.items as { sku: string }[]).find(
+    (r) => r.sku === "084084",
+  ) as Record<string, unknown>;
   assert(!("url_key" in row), "the val does not even request url_key");
   assert(
     !productUrl(bySku("084084")).includes("kanom-dok-mai"),
@@ -208,8 +223,9 @@ test("url_key is not the product URL", () => {
 
 test("orders the feed newest product first", async () => {
   const xml = await feed();
-  const titles = [...xml.matchAll(/<title>(?:<!\[CDATA\[)?([^\]<]*)/g)]
-    .map((m) => m[1]);
+  const titles = [...xml.matchAll(/<title>(?:<!\[CDATA\[)?([^\]<]*)/g)].map(
+    (m) => m[1],
+  );
   // titles[0] is the channel.
   assertEquals(titles[1], "Chewy Thai Coconut Cakes", "newest product first");
 
@@ -276,7 +292,8 @@ test("keeps volatile inventory state out of the item body", () => {
   // It is in the source data, so the exclusion is a choice, not an accident.
   const labels = new Set(
     (raw.data.products.items as { product_label?: string }[])
-      .map((r) => r.product_label).filter(Boolean),
+      .map((r) => r.product_label)
+      .filter(Boolean),
   );
   assertEquals(labels.size, 0, "the val does not even request product_label");
 });

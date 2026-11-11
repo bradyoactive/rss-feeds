@@ -142,8 +142,8 @@ function element(item: string, name: string): string {
 function dominantSpelling(spellings: string[]): string {
   const counts = new Map<string, number>();
   for (const s of spellings) counts.set(s, (counts.get(s) ?? 0) + 1);
-  return [...counts].sort((a, b) =>
-    b[1] - a[1] || a[0].localeCompare(b[0])
+  return [...counts].sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
   )[0][0];
 }
 
@@ -200,18 +200,16 @@ const ENTITIES: Record<string, string> = {
 };
 
 function decodeEntities(s: string): string {
-  return s.replace(
-    /&(#x?[0-9a-f]+|[a-z]+);/gi,
-    (whole, body: string) => {
-      if (body[0] === "#") {
-        const code = body[1] === "x" || body[1] === "X"
+  return s.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (whole, body: string) => {
+    if (body[0] === "#") {
+      const code =
+        body[1] === "x" || body[1] === "X"
           ? parseInt(body.slice(2), 16)
           : parseInt(body.slice(1), 10);
-        return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
-      }
-      return ENTITIES[body.toLowerCase()] ?? whole;
-    },
-  );
+      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+    }
+    return ENTITIES[body.toLowerCase()] ?? whole;
+  });
 }
 
 /**

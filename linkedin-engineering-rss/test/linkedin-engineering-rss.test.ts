@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./linkedin-engineering.html", import.meta.url), "utf8",
+  new URL("./linkedin-engineering.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const byUrl = (url: string) => posts.find((p) => p.url === url);

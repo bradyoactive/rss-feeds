@@ -94,10 +94,8 @@ async function getPosts(): Promise<Post[]> {
 
   // A post whose page fails keeps its listing data and simply carries no date,
   // rather than sinking the whole feed.
-  const details = await mapLimit(
-    stubs,
-    DETAIL_CONCURRENCY,
-    (s) => fetchDetail(s.slug),
+  const details = await mapLimit(stubs, DETAIL_CONCURRENCY, (s) =>
+    fetchDetail(s.slug),
   );
   return stubs.map((stub, i) => ({ ...stub, ...details[i] }));
 }
@@ -172,7 +170,9 @@ export function extractIndex(html: string, topic: string): Stub[] {
       ...after.matchAll(
         /data-analytics-event-name="blog-author"[^>]*>([\s\S]*?)<\/a>/g,
       ),
-    ].map((a) => decodeEntities(stripTags(a[1])).trim()).filter(Boolean);
+    ]
+      .map((a) => decodeEntities(stripTags(a[1])).trim())
+      .filter(Boolean);
 
     bySlug.set(slug, {
       slug,
@@ -205,11 +205,9 @@ export function extractDetail(
 ): Pick<Post, "ts" | "description" | "image"> {
   let posting: Record<string, unknown> | undefined;
 
-  for (
-    const block of html.matchAll(
-      /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
-    )
-  ) {
+  for (const block of html.matchAll(
+    /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
+  )) {
     // The block is raw JSON today. Only fall back to entity-decoding if that
     // fails, so a legitimate "&amp;" inside a description survives intact.
     let parsed: unknown;
@@ -315,10 +313,11 @@ function decodeEntities(s: string): string {
 }
 
 function slugify(s: string): string {
-  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
-    /^-|-$/g,
-    "",
-  );
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**

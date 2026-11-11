@@ -20,7 +20,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./shopify-latest.data.json", import.meta.url), "utf8",
+    new URL("./shopify-latest.data.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -37,9 +38,18 @@ test("reads every article on the page", () => {
     posts.length,
     "handles are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.excerpt), "every post has an excerpt");
-  assert(posts.every((p) => p.image), "every post has an image");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.excerpt),
+    "every post has an excerpt",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has an image",
+  );
 });
 
 test("reads every field of a known item", () => {
@@ -133,12 +143,12 @@ test("finds the articles without reaching through the route id", () => {
     authorV2: { name: "Ada" },
   };
   const relocated = [
-    { "_1": 2 },
+    { _1: 2 },
     "some-other-route",
-    { "_3": 4 },
+    { _3: 4 },
     "data",
     {
-      "_5": 6,
+      _5: 6,
     },
     "articles",
     [7],
@@ -178,16 +188,20 @@ test("tells an interned key from a literal underscore key", () => {
   // "_12" means "the string at index 12", but `__typename` is a literal key —
   // and it is the one the article search keys off, so reading it as an index
   // would quietly hide every article.
-  const out = decode([{ "_1": 2 }, "wrapped", {
-    __typename: "Article",
-  }]) as any;
+  const out = decode([
+    { _1: 2 },
+    "wrapped",
+    {
+      __typename: "Article",
+    },
+  ]) as any;
   assertEquals(out.wrapped, { __typename: "Article" });
 });
 
 test("resolves a shared index to one object rather than a copy", () => {
   // The payload references the same subtree from many places; the decoder
   // memoises, which is what keeps it linear.
-  const shared = [{ "_1": 2, "_3": 2 }, "left", { "_4": 5 }, "right", "n", 42];
+  const shared = [{ _1: 2, _3: 2 }, "left", { _4: 5 }, "right", "n", 42];
   const out = decode(shared) as any;
   assertEquals(out.left, { n: 42 }, "decoded once");
   assert(out.left === out.right, "and both references point at it");
@@ -198,11 +212,16 @@ test("survives input that is not the payload we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ articles: [] }).length, 0, "not an array");
   assertEquals(
-    extractPosts([{ "_1": 2 }, "x", [{
-      __typename: "Article",
-      title: "no handle",
-    }]])
-      .length,
+    extractPosts([
+      { _1: 2 },
+      "x",
+      [
+        {
+          __typename: "Article",
+          title: "no handle",
+        },
+      ],
+    ]).length,
     0,
     "articles without a handle are dropped",
   );
@@ -214,10 +233,7 @@ const feed = (query = "") =>
 test("serves the latest articles", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 20, "every article");
-  assert(
-    body.includes("<title>Shopify Engineering</title>"),
-    "channel title",
-  );
+  assert(body.includes("<title>Shopify Engineering</title>"), "channel title");
   assert(
     body.includes("<link>https://shopify.engineering/latest</link>"),
     "channel link is the page the feed mirrors",
@@ -237,9 +253,13 @@ test("serves the latest articles", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

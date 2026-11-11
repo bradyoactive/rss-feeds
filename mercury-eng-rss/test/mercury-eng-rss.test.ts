@@ -21,10 +21,12 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const searchHtml = await readFile(
-  new URL("./mercury-eng-search.html", import.meta.url), "utf8",
+  new URL("./mercury-eng-search.html", import.meta.url),
+  "utf8",
 );
 const postHtml = await readFile(
-  new URL("./mercury-post-ghciwatch.html", import.meta.url), "utf8",
+  new URL("./mercury-post-ghciwatch.html", import.meta.url),
+  "utf8",
 );
 const stubs = extractIndex(searchHtml, "Eng Blog");
 
@@ -36,7 +38,10 @@ test("extracts every Eng Blog post from the listing", () => {
     stubs.every((s) => s.slug && s.title),
     "every stub has a slug and title",
   );
-  assert(stubs.every((s) => s.topic === "Eng Blog"), "every stub is Eng Blog");
+  assert(
+    stubs.every((s) => s.topic === "Eng Blog"),
+    "every stub is Eng Blog",
+  );
   assertEquals(
     new Set(stubs.map((s) => s.slug)).size,
     stubs.length,
@@ -46,7 +51,10 @@ test("extracts every Eng Blog post from the listing", () => {
 
 test("takes authors from the listing, which covers every post", () => {
   // Half these posts have no JSON-LD Person node, so the listing is the source.
-  assert(stubs.every((s) => s.author), "every stub has an author");
+  assert(
+    stubs.every((s) => s.author),
+    "every stub has an author",
+  );
   const ghci = stubs.find((s) => s.slug === "announcing-ghciwatch");
   assertEquals(ghci?.author, "Rebecca Turner", "author");
   assertEquals(ghci?.title, "Announcing ghciwatch 1.0", "title");
@@ -107,7 +115,8 @@ test("reads a card's topic, title and authors only from that card", () => {
     `<a data-analytics-event-name="blog-article" href="/blog/${slug}"><span><h2>${slug} &amp; co</h2></span></a>` +
     `<a data-analytics-event-name="blog-author" href="/blog/authors/x"><span>${author}</span></a>` +
     `<a data-analytics-event-name="blog-article" aria-hidden="true" href="/blog/${slug}"></a>`;
-  const html = card("a", "engineering-blog", "Ann") +
+  const html =
+    card("a", "engineering-blog", "Ann") +
     card("b", "personal-finance", "Bob") +
     card("c", "engineering-blog", "Cy");
   assertEquals(
@@ -171,10 +180,14 @@ test("serves the feed", async () => {
 });
 
 test("orders items newest first", async () => {
-  const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map((
-    m,
-  ) => Date.parse(m[1]));
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map(
+    (m) => Date.parse(m[1]),
+  );
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {
@@ -218,10 +231,7 @@ test("renders XML-safe output", () => {
     "item title survives verbatim inside CDATA",
   );
   assert(!xml.includes("]]]]"), "no stray CDATA breakout in ordinary text");
-  assert(
-    xml.includes("<pubDate>"),
-    "RFC-822 pubDate",
-  );
+  assert(xml.includes("<pubDate>"), "RFC-822 pubDate");
   // Control characters are illegal in XML 1.0 and the library does not strip
   // them, so the val must — one anywhere breaks the whole document.
   const dirty = renderRss({
@@ -254,16 +264,18 @@ test("omits optional elements when the post lacks them", () => {
     description: "D",
     siteLink: "https://mercury.com/blog/",
     feedUrl: "https://mercury.com/blog/",
-    items: [{
-      slug: "bare",
-      title: "Bare",
-      description: "",
-      ts: null,
-      author: "",
-      image: "",
-      topic: "",
-      categories: [],
-    }],
+    items: [
+      {
+        slug: "bare",
+        title: "Bare",
+        description: "",
+        ts: null,
+        author: "",
+        image: "",
+        topic: "",
+        categories: [],
+      },
+    ],
   });
 
   for (const tag of ["pubDate", "category", "dc:creator", "media:content"]) {

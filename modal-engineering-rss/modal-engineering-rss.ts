@@ -199,7 +199,8 @@ export function devalue(data: unknown): unknown {
   };
 
   // A container's slots are indices; anything else is already the value.
-  const resolve = (item: unknown) => typeof item === "number" ? at(item) : item;
+  const resolve = (item: unknown) =>
+    typeof item === "number" ? at(item) : item;
 
   return at(0);
 }
@@ -263,7 +264,7 @@ function mediaType(url: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

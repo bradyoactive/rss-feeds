@@ -32,10 +32,7 @@ liveTest("a sample of hero thumbnails resolve", async () => {
 });
 
 liveTest("the engineering portal the channel links to exists", async () => {
-  const res = buildFeed(
-    posts,
-    new URL("https://feed.val.run/anthropic"),
-  );
+  const res = buildFeed(posts, new URL("https://feed.val.run/anthropic"));
   await assertAllServed(
     [channelLink(await res.text())],
     "anthropic engineering portal",
@@ -45,15 +42,12 @@ liveTest("the engineering portal the channel links to exists", async () => {
 liveTest(
   "the live engineering portal still renders article cards",
   async () => {
-    const res = await fetch(
-      "https://www.anthropic.com/engineering",
-      {
-        headers: {
-          "user-agent": "anthropic-rss-bridge (+https://val.town)",
-          accept: "text/html,application/xhtml+xml",
-        },
+    const res = await fetch("https://www.anthropic.com/engineering", {
+      headers: {
+        "user-agent": "anthropic-rss-bridge (+https://val.town)",
+        accept: "text/html,application/xhtml+xml",
       },
-    );
+    });
     if (!res.ok) throw new Error(`portal page: HTTP ${res.status}`);
     const html = await res.text();
     const live = extractPosts(html);

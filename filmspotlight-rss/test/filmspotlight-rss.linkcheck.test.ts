@@ -59,7 +59,7 @@ liveTest("'future' still means what the val relies on it meaning", async () => {
   // If past events start appearing, that reasoning has stopped holding.
   const today = todayIn();
   const past = (await live()).filter((e) =>
-    e.screenings.every((s) => s.date < today)
+    e.screenings.every((s) => s.date < today),
   );
   if (past.length) {
     throw new Error(

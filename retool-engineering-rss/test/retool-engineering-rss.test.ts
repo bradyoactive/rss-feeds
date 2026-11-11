@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./retool-engineering.html", import.meta.url), "utf8",
+  new URL("./retool-engineering.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const byUrl = (url: string) => posts.find((p) => p.url === url);
@@ -63,7 +64,7 @@ test("every post has a 16:9 hero image from Sanity CDN", () => {
   );
   assert(
     posts.every((p) =>
-      p.image.startsWith("https://cdn.sanity.io/images/bclf52sw/production/")
+      p.image.startsWith("https://cdn.sanity.io/images/bclf52sw/production/"),
     ),
     "images come from Retool Sanity CDN",
   );
@@ -95,10 +96,7 @@ test("decodes html entities in titles and summaries", () => {
 });
 
 test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
-  assertEquals(
-    parseDate("2026-09-24"),
-    Date.UTC(2026, 8, 24, 0, 0, 0),
-  );
+  assertEquals(parseDate("2026-09-24"), Date.UTC(2026, 8, 24, 0, 0, 0));
   assertEquals(
     parseDate("2026-05-25T14:30:00.000Z"),
     Date.parse("2026-05-25T14:30:00.000Z"),
@@ -113,10 +111,7 @@ test("normalizeUrl handles absolute and relative paths", () => {
     normalizeUrl("https://retool.com/blog/test"),
     "https://retool.com/blog/test",
   );
-  assertEquals(
-    normalizeUrl("/blog/test"),
-    "https://retool.com/blog/test",
-  );
+  assertEquals(normalizeUrl("/blog/test"), "https://retool.com/blog/test");
 });
 
 test("mediaType determines MIME type from extension", () => {

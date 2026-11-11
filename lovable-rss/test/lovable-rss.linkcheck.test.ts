@@ -19,7 +19,10 @@ const posts = selectPosts(
 liveTest("every post link resolves", async () => {
   // Links come straight from Lovable's feed rather than being built here, so
   // this is really a check that their feed points at pages that exist.
-  await assertAllServed(posts.map((p) => p.link), "lovable post links");
+  await assertAllServed(
+    posts.map((p) => p.link),
+    "lovable post links",
+  );
 });
 
 liveTest("the category page the channel links to exists", async () => {

@@ -83,7 +83,9 @@ liveTest("no ticket link is missing", async () => {
       const res = await fetch(url, { redirect: "follow" });
       await res.body?.cancel();
       status = res.status;
-    } catch { /* vendor refused the connection; not evidence of a bad URL */ }
+    } catch {
+      /* vendor refused the connection; not evidence of a bad URL */
+    }
     if (status === 404 || status === 410) missing.push(`${status} ${url}`);
   }
   if (missing.length) {
@@ -110,9 +112,7 @@ liveTest("a sample of guest headshots resolve", async () => {
   const screenings = await live();
   await assertAllServed(
     sampleOf(
-      screenings.flatMap((s) => s.guests.map((g) => g.image)).filter(
-        Boolean,
-      ),
+      screenings.flatMap((s) => s.guests.map((g) => g.image)).filter(Boolean),
     ),
     "balkon guest headshots",
   );
@@ -129,8 +129,8 @@ liveTest("the signup gate has not closed further", async () => {
   // an expired cookie shows up as a warning in the val's logs instead.
   const days = new Set((await live()).map((s) => s.date)).size;
   const before = new Set(
-    extractScreenings(await fixture(import.meta, "balkon-qa.html")).map((s) =>
-      s.date
+    extractScreenings(await fixture(import.meta, "balkon-qa.html")).map(
+      (s) => s.date,
     ),
   ).size;
   if (days < before - 2) {

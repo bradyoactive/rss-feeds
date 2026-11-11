@@ -112,14 +112,20 @@ export function extractPosts(html: string): Post[] {
 
     // Authors
     const authorsList = Array.isArray(entry.authors)
-      ? entry.authors.map(str).map((s) => s.trim()).filter(Boolean)
+      ? entry.authors
+          .map(str)
+          .map((s) => s.trim())
+          .filter(Boolean)
       : [];
     const author = authorsList.join(", ") || "Stripe Engineering";
 
     // Categories / Topics. The payload holds every blog post, so keep only
     // the ones the topic page itself would show.
     const topics = Array.isArray(entry.topics)
-      ? entry.topics.map(str).map((s) => s.trim()).filter(Boolean)
+      ? entry.topics
+          .map(str)
+          .map((s) => s.trim())
+          .filter(Boolean)
       : [];
     if (!topics.some((t) => t.toLowerCase() === "engineering")) continue;
 
@@ -146,9 +152,9 @@ export function renderRss(feed: {
   feedUrl: string;
   items: Post[];
 }): string {
-  const dates = feed.items.map((p) => p.ts).filter((ts): ts is number =>
-    ts !== null
-  );
+  const dates = feed.items
+    .map((p) => p.ts)
+    .filter((ts): ts is number => ts !== null);
 
   const out = new Feed({
     title: clean(feed.title),
@@ -177,8 +183,8 @@ export function renderRss(feed: {
 export function parseDate(v: unknown): number | null {
   const s = str(v).trim();
   if (!s) return null;
-  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/
-    .exec(s);
+  const naive =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/.exec(s);
   if (naive) {
     const [y, mo, d, h, mi, sec] = naive.slice(1).map(Number);
     return Date.UTC(y, mo - 1, d, h || 0, mi || 0, sec || 0);

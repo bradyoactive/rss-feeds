@@ -26,7 +26,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
   await readFile(
-    new URL("./harvey-sanity-technical.json", import.meta.url), "utf8",
+    new URL("./harvey-sanity-technical.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -39,7 +40,10 @@ test("reads the whole tag from one query", () => {
     payload.result.length,
     "every returned row became a post",
   );
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
@@ -67,14 +71,12 @@ test("every post arrives complete — no per-post fetch needed", () => {
 test("keeps a byline that is a group rather than a person", () => {
   // These four have no JSON-LD Person node on their pages, so the old scraper
   // dropped their byline entirely. This is the regression the API fixed.
-  for (
-    const slug of [
-      "using-elo-scores-to-build-better-legal-ai",
-      "introducing-big-law-bench-global",
-      "expanding-big-law-bench",
-      "harvey-mcp-overview",
-    ]
-  ) {
+  for (const slug of [
+    "using-elo-scores-to-build-better-legal-ai",
+    "introducing-big-law-bench-global",
+    "expanding-big-law-bench",
+    "harvey-mcp-overview",
+  ]) {
     assertEquals(bySlug(slug)?.authors, ["Harvey Team"], slug);
   }
 });
@@ -115,19 +117,27 @@ test("asks Sanity for a format the reader can use", () => {
 
 test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts({ result: [{ slug: "bare", title: "Bare" }] });
-  assertEquals(post, {
-    slug: "bare",
-    title: "Bare",
-    ts: null,
-    description: "",
-    image: "",
-    authors: [],
-  }, "bare post");
+  assertEquals(
+    post,
+    {
+      slug: "bare",
+      title: "Bare",
+      ts: null,
+      description: "",
+      image: "",
+      authors: [],
+    },
+    "bare post",
+  );
 });
 
 test("survives a payload that is not what we asked for", () => {

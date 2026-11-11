@@ -22,7 +22,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
   await readFile(
-    new URL("./snowflake-aem-core-platform.json", import.meta.url), "utf8",
+    new URL("./snowflake-aem-core-platform.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -35,7 +36,10 @@ test("reads the whole page from one request", () => {
     payload.hits.length,
     "every returned card became a post",
   );
-  assert(posts.every((p) => p.title && p.path), "every post has a title/path");
+  assert(
+    posts.every((p) => p.title && p.path),
+    "every post has a title/path",
+  );
   assertEquals(
     new Set(posts.map((p) => p.path)).size,
     posts.length,
@@ -93,10 +97,12 @@ test("keeps every name on a multi-author post", () => {
 
 test("takes the title from title.lines, not just the button", () => {
   const [post] = extractPosts({
-    hits: [{
-      title: { lines: ["Two", "lines"] },
-      button: { text: "Button text", buttonLink: { url: "/en/blog/x/" } },
-    }],
+    hits: [
+      {
+        title: { lines: ["Two", "lines"] },
+        button: { text: "Button text", buttonLink: { url: "/en/blog/x/" } },
+      },
+    ],
   });
   assertEquals(post.title, "Two lines", "lines joined, button ignored");
 
@@ -108,20 +114,28 @@ test("takes the title from title.lines, not just the button", () => {
 
 test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("degrades on a card missing its optional fields", () => {
   const [post] = extractPosts({
     hits: [{ button: { text: "Bare", buttonLink: { url: "/en/blog/bare/" } } }],
   });
-  assertEquals(post, {
-    title: "Bare",
-    path: "/en/blog/bare/",
-    ts: null,
-    authors: [],
-    categories: [],
-  }, "bare post");
+  assertEquals(
+    post,
+    {
+      title: "Bare",
+      path: "/en/blog/bare/",
+      ts: null,
+      authors: [],
+      categories: [],
+    },
+    "bare post",
+  );
 });
 
 test("survives a payload that is not what we asked for", () => {
@@ -165,17 +179,15 @@ test("reads the display date as UTC, not as local midnight", () => {
 });
 
 test("refuses a date it cannot read rather than guessing", () => {
-  for (
-    const bad of [
-      "",
-      "2026-09-08",
-      "SEPT 08, 2026",
-      "XXX 08, 2026",
-      "FEB 31, 2026",
-      "SEP 08",
-      "not a date",
-    ]
-  ) {
+  for (const bad of [
+    "",
+    "2026-09-08",
+    "SEPT 08, 2026",
+    "XXX 08, 2026",
+    "FEB 31, 2026",
+    "SEP 08",
+    "not a date",
+  ]) {
     assertEquals(parseDate(bad), null, `rejects ${JSON.stringify(bad)}`);
   }
 });
@@ -187,9 +199,7 @@ test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 9, "all posts");
   assert(
-    body.includes(
-      "<title>Snowflake Engineering Blog — Core Platform</title>",
-    ),
+    body.includes("<title>Snowflake Engineering Blog — Core Platform</title>"),
     "channel title",
   );
   assert(

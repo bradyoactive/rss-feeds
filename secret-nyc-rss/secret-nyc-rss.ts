@@ -27,7 +27,7 @@ export default async function (): Promise<Response> {
     const response = await fetch(SOURCE, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; ValTown/1.0)",
-        "Accept": "application/rss+xml, application/xml, text/xml",
+        Accept: "application/rss+xml, application/xml, text/xml",
       },
     });
 
@@ -39,17 +39,14 @@ export default async function (): Promise<Response> {
 
     const xml = await response.text();
 
-    return new Response(
-      xml.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/xml; charset=utf-8",
-          // Cache the result for 30 minutes to reduce load on the target server
-          "Cache-Control": "s-maxage=1800, stale-while-revalidate",
-        },
+    return new Response(xml.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        // Cache the result for 30 minutes to reduce load on the target server
+        "Cache-Control": "s-maxage=1800, stale-while-revalidate",
       },
-    );
+    });
   } catch (error) {
     return new Response(`Internal Server Error: ${(error as Error).message}`, {
       status: 500,

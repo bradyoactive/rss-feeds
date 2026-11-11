@@ -32,8 +32,7 @@ const DATASET = "production";
 /** Pinned: Sanity dates its API, and an unpinned version is a silent upgrade. */
 const API_VERSION = "v2021-10-21";
 /** apicdn is the cached host; the plain api. host is rate-limited harder. */
-const SANITY_URL =
-  `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
+const SANITY_URL = `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
 /** One request, comfortably clear of the category's ~14 posts. */
 const PAGE_SIZE = 100;
 
@@ -212,10 +211,11 @@ function str(v: unknown): string {
 }
 
 function slugify(s: string): string {
-  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
-    /^-|-$/g,
-    "",
-  );
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**

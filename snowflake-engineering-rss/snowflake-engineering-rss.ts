@@ -244,7 +244,7 @@ function str(v: unknown): string {
 
 function obj(v: unknown): Record<string, unknown> {
   return typeof v === "object" && v !== null
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : {};
 }
 

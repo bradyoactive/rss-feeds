@@ -30,10 +30,7 @@ liveTest("a sample of hero thumbnails resolve", async () => {
 liveTest(
   "the engineering category page the channel links to exists",
   async () => {
-    const res = buildFeed(
-      posts,
-      new URL("https://feed.val.run/retool"),
-    );
+    const res = buildFeed(posts, new URL("https://feed.val.run/retool"));
     await assertAllServed(
       [channelLink(await res.text())],
       "retool engineering category page",
@@ -44,15 +41,12 @@ liveTest(
 liveTest(
   "the live engineering category page still renders articles",
   async () => {
-    const res = await fetch(
-      "https://retool.com/blog/category/engineering",
-      {
-        headers: {
-          "user-agent": "retool-rss-bridge (+https://val.town)",
-          accept: "text/html,application/xhtml+xml",
-        },
+    const res = await fetch("https://retool.com/blog/category/engineering", {
+      headers: {
+        "user-agent": "retool-rss-bridge (+https://val.town)",
+        accept: "text/html,application/xhtml+xml",
       },
-    );
+    });
     if (!res.ok) throw new Error(`category page: HTTP ${res.status}`);
     const html = await res.text();
     const live = extractPosts(html);

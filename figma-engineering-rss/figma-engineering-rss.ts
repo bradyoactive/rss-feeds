@@ -133,7 +133,9 @@ export function extractPosts(payload: unknown): Post[] {
       title,
       lede: plainText(row.lede),
       ts: Number.isFinite(ts) ? ts : null,
-      author: list(row.authors).map((a) => str(a.name)).filter(Boolean)
+      author: list(row.authors)
+        .map((a) => str(a.name))
+        .filter(Boolean)
         .join(" & "),
       image: str(asset?.url),
       imageType: str(asset?.mimeType),
@@ -167,7 +169,11 @@ function imageAsset(media: unknown): Record<string, unknown> | null {
  */
 function plainText(v: unknown): string {
   return list(v)
-    .map((block) => list(block.children).map((c) => raw(c.text)).join(""))
+    .map((block) =>
+      list(block.children)
+        .map((c) => raw(c.text))
+        .join(""),
+    )
     .filter(Boolean)
     .join(" ")
     .trim();
@@ -223,7 +229,7 @@ function postUrl(path: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 
@@ -241,10 +247,11 @@ function str(v: unknown): string {
 }
 
 function slugify(s: string): string {
-  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
-    /^-|-$/g,
-    "",
-  );
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**

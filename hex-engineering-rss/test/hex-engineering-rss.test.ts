@@ -26,7 +26,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
   await readFile(
-    new URL("./hex-sanity-engineering.json", import.meta.url), "utf8",
+    new URL("./hex-sanity-engineering.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -39,7 +40,10 @@ test("reads the whole category from one query", () => {
     payload.result.length,
     "every returned row became a post",
   );
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
@@ -67,10 +71,7 @@ test("reads a known post's fields", () => {
   // `date` is date-only, so the post lands on UTC midnight.
   assertEquals(p.ts, Date.parse("2026-07-29T00:00:00Z"), "ts");
   assertEquals(p.author, "Zach Kirby & Olivia Koshy", "multi-author byline");
-  assert(
-    p.synopsis.startsWith("Our cache hit rate looked great"),
-    "synopsis",
-  );
+  assert(p.synopsis.startsWith("Our cache hit rate looked great"), "synopsis");
   assert(
     p.image.startsWith("https://cdn.sanity.io/images/e92memrj/production/"),
     "Sanity asset URL",
@@ -79,20 +80,28 @@ test("reads a known post's fields", () => {
 
 test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts({ result: [{ slug: "bare", title: "Bare" }] });
-  assertEquals(post, {
-    slug: "bare",
-    title: "Bare",
-    synopsis: "",
-    ts: null,
-    author: "",
-    image: "",
-    categories: [],
-  }, "bare post");
+  assertEquals(
+    post,
+    {
+      slug: "bare",
+      title: "Bare",
+      synopsis: "",
+      ts: null,
+      author: "",
+      image: "",
+      categories: [],
+    },
+    "bare post",
+  );
 });
 
 test("survives a payload that is not what we asked for", () => {

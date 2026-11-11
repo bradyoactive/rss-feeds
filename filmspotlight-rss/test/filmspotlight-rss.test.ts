@@ -22,7 +22,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const fixture = JSON.parse(
   await readFile(
-    new URL("./filmspotlight-future.json", import.meta.url), "utf8",
+    new URL("./filmspotlight-future.json", import.meta.url),
+    "utf8",
   ),
 );
 const events = extractEvents(fixture);
@@ -33,10 +34,19 @@ const FEED_URL = "https://feed.val.run/filmspotlight";
 test("reads events matching the allowed theaters and only those", () => {
   assertEquals(fixture.length, 114, "records the API returned");
   assertEquals(events.length, 35, "events read at allowed theaters");
-  assert(events.every((e) => e.title), "every event has a title");
+  assert(
+    events.every((e) => e.title),
+    "every event has a title",
+  );
   assertEquals(new Set(events.map((e) => e.id)).size, events.length, "unique");
-  assert(events.every((e) => e.description), "every event has a description");
-  assert(events.every((e) => e.screenings.length), "and at least one date");
+  assert(
+    events.every((e) => e.description),
+    "every event has a description",
+  );
+  assert(
+    events.every((e) => e.screenings.length),
+    "and at least one date",
+  );
   assert(
     events.every((e) => isAllowedTheater(e.location)),
     "every event is at an allowed theater",
@@ -118,7 +128,10 @@ test("extractEvents drops events from non-allowed theaters", () => {
     },
   ];
   const extracted = extractEvents(records);
-  assertEquals(extracted.map((e) => e.title), ["At IFC"]);
+  assertEquals(
+    extracted.map((e) => e.title),
+    ["At IFC"],
+  );
 });
 
 test("reads every field of a known event", () => {
@@ -127,10 +140,12 @@ test("reads every field of a known event", () => {
   assertEquals(e.location, "Film at Lincoln Center");
   assertEquals(e.presenters, "Larry Fessenden (Director)");
   assertEquals(e.createdAt, Date.parse("2026-07-21T11:04:29.611176+00:00"));
-  assertEquals(e.screenings, [{
-    date: "2026-08-17",
-    appearance: "Larry Fessenden (Director)",
-  }]);
+  assertEquals(e.screenings, [
+    {
+      date: "2026-08-17",
+      appearance: "Larry Fessenden (Director)",
+    },
+  ]);
   assertEquals(e.rsvp, "https://www.filmlinc.org/films/wendigo/");
   assert(
     e.description.startsWith("This special 25th-anniversary screening"),
@@ -148,10 +163,14 @@ test("dates an item by when it was announced, not when it screens", () => {
     e.createdAt! < firstScreening,
     "announced before it screens, as an announcement should be",
   );
-  assert(events.every((e) => e.createdAt !== null), "every event is dated");
+  assert(
+    events.every((e) => e.createdAt !== null),
+    "every event is dated",
+  );
 
   // And the dates span a real history rather than clustering at fetch time.
-  const span = Math.max(...events.map((e) => e.createdAt!)) -
+  const span =
+    Math.max(...events.map((e) => e.createdAt!)) -
     Math.min(...events.map((e) => e.createdAt!));
   assert(
     span > 300 * 86_400_000,
@@ -160,9 +179,14 @@ test("dates an item by when it was announced, not when it screens", () => {
 });
 
 test("orders items newest announcement first", async () => {
-  const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)]
-    .map((m) => Date.parse(m[1]));
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending");
+  const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
+    Date.parse(m[1]),
+  );
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending",
+  );
   assertEquals(dates.length, events.length, "one date per event");
 });
 
@@ -286,7 +310,10 @@ test("skips records that are not events", () => {
     { id: 2 },
     "not an object",
   ];
-  assertEquals(extractEvents(withHoles).map((e) => e.title), ["Kept"]);
+  assertEquals(
+    extractEvents(withHoles).map((e) => e.title),
+    ["Kept"],
+  );
 });
 
 test("survives input that is not the API we asked for", () => {
@@ -300,8 +327,10 @@ test("survives input that is not the API we asked for", () => {
     screenings: [{ date: "2026-09-01" }],
   };
   assertEquals(
-    extractEvents([{ id: 1, ...dup }, { id: 1, ...dup, event_title: "B" }])
-      .length,
+    extractEvents([
+      { id: 1, ...dup },
+      { id: 1, ...dup, event_title: "B" },
+    ]).length,
     1,
     "a repeated id is taken once",
   );

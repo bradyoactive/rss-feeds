@@ -12,7 +12,10 @@
  * *more* deals than asked for, not fewer.
  */
 
-import { deepStrictEqual as assertEquals, ok as assert } from "node:assert/strict";
+import {
+  deepStrictEqual as assertEquals,
+  ok as assert,
+} from "node:assert/strict";
 import handler, {
   applyFilters,
   type Deal,
@@ -59,9 +62,15 @@ liveTest(
     // FreshRSS renders an enclosure as an <img> based on exactly this type, and
     // thumbnails are a mix of JPEG and PNG behind the same ".thumb" suffix.
     const deals = await fetchDeals(opts("pool=40"));
-    const picked = sampleOf(deals.filter((d) => d.image), 5);
+    const picked = sampleOf(
+      deals.filter((d) => d.image),
+      5,
+    );
     assert(picked.length > 0, "no thumbnails to check");
-    await assertAllServed(picked.map((d) => d.image), "slickdeals thumbnails");
+    await assertAllServed(
+      picked.map((d) => d.image),
+      "slickdeals thumbnails",
+    );
     for (const d of await resolveImageTypes(picked)) {
       const res = await fetch(d.image, { method: "HEAD" });
       const type = res.headers.get("content-type")?.split(";")[0].trim();
@@ -192,9 +201,7 @@ liveTest("the handler serves a filtered feed end to end", async () => {
 });
 
 liveTest("the live filters actually hold on live data", async () => {
-  const o = opts(
-    "minVotes=15&minViews=100&hideExpired=true&priceMax=500",
-  );
+  const o = opts("minVotes=15&minViews=100&hideExpired=true&priceMax=500");
   const got = applyFilters(await fetchDeals(o), o);
   assert(got.length > 0, "no live deal met a deliberately loose filter set");
   for (const d of got) {
@@ -263,9 +270,9 @@ liveTest("narrowing server-side really does extend the reach", async () => {
   ]);
   assert(
     narrowed > plain * 2,
-    `rating=firedeal reaches ${narrowed.toFixed(1)}h vs ${
-      plain.toFixed(1)
-    }h unfiltered ` +
+    `rating=firedeal reaches ${narrowed.toFixed(1)}h vs ${plain.toFixed(
+      1,
+    )}h unfiltered ` +
       "— narrowing no longer extends reach, so the feed's advice is wrong",
   );
 });

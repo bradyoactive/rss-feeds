@@ -23,10 +23,7 @@ liveTest("a sample of post links resolve", async () => {
 });
 
 liveTest("the engineering topic page the channel links to exists", async () => {
-  const res = buildFeed(
-    posts,
-    new URL("https://feed.val.run/stripe"),
-  );
+  const res = buildFeed(posts, new URL("https://feed.val.run/stripe"));
   await assertAllServed(
     [channelLink(await res.text())],
     "stripe engineering topic page",
@@ -36,15 +33,12 @@ liveTest("the engineering topic page the channel links to exists", async () => {
 liveTest(
   "the live engineering topic page still server-renders Next.js posts",
   async () => {
-    const res = await fetch(
-      "https://stripe.dev/blog/topic/engineering",
-      {
-        headers: {
-          "user-agent": "stripe-rss-bridge (+https://val.town)",
-          accept: "text/html,application/xhtml+xml",
-        },
+    const res = await fetch("https://stripe.dev/blog/topic/engineering", {
+      headers: {
+        "user-agent": "stripe-rss-bridge (+https://val.town)",
+        accept: "text/html,application/xhtml+xml",
       },
-    );
+    });
     if (!res.ok) throw new Error(`topic page: HTTP ${res.status}`);
     const html = await res.text();
     const live = extractPosts(html);

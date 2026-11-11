@@ -32,7 +32,8 @@ import { channelLink } from "../../common/linkcheck.ts";
 
 const payload = JSON.parse(
   await readFile(
-    new URL("./pigeons-sanity-posts.json", import.meta.url), "utf8",
+    new URL("./pigeons-sanity-posts.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -45,7 +46,10 @@ test("reads the whole page from one query", () => {
     payload.length,
     "every returned row became a post",
   );
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
@@ -68,7 +72,7 @@ test("every post arrives with the fields the feed renders", () => {
   );
   assert(
     posts.every((p) =>
-      p.image.startsWith("https://cdn.sanity.io/images/pu3h3rl5/production/")
+      p.image.startsWith("https://cdn.sanity.io/images/pu3h3rl5/production/"),
     ),
     "images resolve to the site's own Sanity asset host",
   );
@@ -121,15 +125,19 @@ test("a post with no publishedAt is kept but left undated", () => {
 
 test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts([{ slug: "bare", title: "Bare" }]);
-  assertEquals(post, {
-    title: "Bare",
-    slug: "bare",
-    description: "",
-    ts: null,
-    image: "",
-    imageType: "",
-    authors: [],
-  }, "bare post");
+  assertEquals(
+    post,
+    {
+      title: "Bare",
+      slug: "bare",
+      description: "",
+      ts: null,
+      image: "",
+      imageType: "",
+      authors: [],
+    },
+    "bare post",
+  );
 });
 
 test("survives a payload that is not what we asked for", () => {
@@ -239,17 +247,17 @@ test("undated posts sort last, not first", async () => {
   const body = await feed();
   const firstItem = body.slice(body.indexOf("<item>"));
   assert(
-    !firstItem.slice(0, firstItem.indexOf("</item>")).includes(
-      "best-underground-rap-hip-hop-2000s",
-    ),
+    !firstItem
+      .slice(0, firstItem.indexOf("</item>"))
+      .includes("best-underground-rap-hip-hop-2000s"),
     "the undated post is no longer the lead item",
   );
 });
 
 test("channel updated is the newest real post, not the epoch", async () => {
   const body = await feed();
-  const updated = /<lastBuildDate>([^<]+)<\/lastBuildDate>/.exec(body)?.[1] ??
-    "";
+  const updated =
+    /<lastBuildDate>([^<]+)<\/lastBuildDate>/.exec(body)?.[1] ?? "";
   // RFC-822 carries no sub-second precision, so compare at the second.
   assertEquals(
     Math.floor(new Date(updated).getTime() / 1000),

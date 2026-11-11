@@ -91,7 +91,10 @@ liveTest("the RPC still answers, csrf header and all", async () => {
   assert(live.length > 50, `only ${live.length} posts came back`);
   const strays = live.filter((p) => !p.categories.includes("Backend"));
   assertEquals(strays.length, 0, "nothing outside the category leaked in");
-  assert(live.every((p) => p.ts !== null), "every live post is dated");
+  assert(
+    live.every((p) => p.ts !== null),
+    "every live post is dated",
+  );
 });
 
 liveTest("a call with no csrf header is still refused", async () => {
@@ -117,16 +120,18 @@ liveTest("the feed's first page matches the cards Uber renders", async () => {
   if (!res.ok) throw new Error(`listing: HTTP ${res.status}`);
   const html = await res.text();
 
-  const cards = html.split('data-testid="newsroom-article-feed-card"').slice(1)
+  const cards = html
+    .split('data-testid="newsroom-article-feed-card"')
+    .slice(1)
     .flatMap((card) => {
       const link =
-        /<a [^>]*href="(https:\/\/www\.uber\.com\/us\/en\/blog\/[^"]*)"[^>]*>([^<]+)<\/a>/
-          .exec(card);
+        /<a [^>]*href="(https:\/\/www\.uber\.com\/us\/en\/blog\/[^"]*)"[^>]*>([^<]+)<\/a>/.exec(
+          card,
+        );
       if (!link) return [];
       const tags = [
         ...card.matchAll(/data-baseweb="tag"[^>]*><span title="([^"]*)"/g),
-      ]
-        .map((m) => unescapeHtml(m[1]));
+      ].map((m) => unescapeHtml(m[1]));
       return [{ url: link[1], title: unescapeHtml(link[2]), tags }];
     });
 
@@ -154,9 +159,8 @@ liveTest("the feed's first page matches the cards Uber renders", async () => {
 function unescapeHtml(s: string): string {
   return s
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(
-      /&#x([0-9a-f]+);/gi,
-      (_, h) => String.fromCodePoint(parseInt(h, 16)),
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) =>
+      String.fromCodePoint(parseInt(h, 16)),
     )
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")

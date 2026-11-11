@@ -60,8 +60,7 @@ async function count(filter: string): Promise<number> {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      query:
-        `query { products(filter: { ${filter} }, pageSize: 1) { total_count } }`,
+      query: `query { products(filter: { ${filter} }, pageSize: 1) { total_count } }`,
     }),
   });
   if (!res.ok) throw new Error(`${API_URL}: HTTP ${res.status}`);
@@ -226,14 +225,15 @@ liveTest(
   async () => {
     // Cannot be fetched (www, 403), but it can be checked for agreement: the
     // page URL encodes the same category id and characteristic the val queries.
-    const xml = await (await fetch(API_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        query:
-          `query { categories(filters: { ids: { eq: "${CATEGORY_ID}" } }) { items { uid name url_key } } }`,
-      }),
-    })).json();
+    const xml = await (
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: `query { categories(filters: { ids: { eq: "${CATEGORY_ID}" } }) { items { uid name url_key } } }`,
+        }),
+      })
+    ).json();
     const category = xml.data?.categories?.items?.[0];
     if (category?.url_key !== "food") {
       throw new Error(

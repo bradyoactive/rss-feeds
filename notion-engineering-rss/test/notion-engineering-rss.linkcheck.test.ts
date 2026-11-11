@@ -28,34 +28,25 @@ liveTest("a sample of hero thumbnails resolve", async () => {
 });
 
 liveTest("the category page the channel links to exists", async () => {
-  const res = buildFeed(
-    posts,
-    new URL("https://feed.val.run/notion"),
-  );
+  const res = buildFeed(posts, new URL("https://feed.val.run/notion"));
   await assertAllServed(
     [channelLink(await res.text())],
     "notion engineering topic page",
   );
 });
 
-liveTest(
-  "the live topic page still server-renders Next.js posts",
-  async () => {
-    const res = await fetch(
-      "https://www.notion.com/blog/topic/tech",
-      {
-        headers: {
-          "user-agent": "notion-rss-bridge (+https://val.town)",
-          accept: "text/html,application/xhtml+xml",
-        },
-      },
-    );
-    if (!res.ok) throw new Error(`topic page: HTTP ${res.status}`);
-    const html = await res.text();
-    const live = extractPosts(html);
-    if (!live.length) throw new Error("live page yielded no posts");
-    if (live.some((p) => p.ts === null)) {
-      throw new Error("a live post carried an unparseable publication date");
-    }
-  },
-);
+liveTest("the live topic page still server-renders Next.js posts", async () => {
+  const res = await fetch("https://www.notion.com/blog/topic/tech", {
+    headers: {
+      "user-agent": "notion-rss-bridge (+https://val.town)",
+      accept: "text/html,application/xhtml+xml",
+    },
+  });
+  if (!res.ok) throw new Error(`topic page: HTTP ${res.status}`);
+  const html = await res.text();
+  const live = extractPosts(html);
+  if (!live.length) throw new Error("live page yielded no posts");
+  if (live.some((p) => p.ts === null)) {
+    throw new Error("a live post carried an unparseable publication date");
+  }
+});

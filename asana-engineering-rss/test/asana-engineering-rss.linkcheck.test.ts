@@ -28,10 +28,7 @@ liveTest("a sample of hero thumbnails resolve", async () => {
 });
 
 liveTest("the category page the channel links to exists", async () => {
-  const res = buildFeed(
-    posts,
-    new URL("https://feed.val.run/asana"),
-  );
+  const res = buildFeed(posts, new URL("https://feed.val.run/asana"));
   await assertAllServed(
     [channelLink(await res.text())],
     "asana engineering category page",

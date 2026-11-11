@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./notion-engineering-tech.html", import.meta.url), "utf8",
+  new URL("./notion-engineering-tech.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
@@ -62,8 +63,8 @@ test("every post has an image and a valid media type", () => {
     "every post has an image",
   );
   assert(
-    posts.every((p) =>
-      p.imageType === "image/png" || p.imageType === "image/jpeg"
+    posts.every(
+      (p) => p.imageType === "image/png" || p.imageType === "image/jpeg",
     ),
     "media type mapped properly",
   );
@@ -104,28 +105,16 @@ test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
     parseDate("2026-10-14T17:38:40.293Z"),
     Date.parse("2026-10-14T17:38:40.293Z"),
   );
-  assertEquals(
-    parseDate("2026-05-15"),
-    Date.UTC(2026, 4, 15, 0, 0, 0),
-  );
+  assertEquals(parseDate("2026-05-15"), Date.UTC(2026, 4, 15, 0, 0, 0));
   assertEquals(parseDate("not a date"), null);
   assertEquals(parseDate(""), null);
   assertEquals(parseDate(null), null);
 });
 
 test("postUrl prepends SITE domain appropriately", () => {
-  assertEquals(
-    postUrl("test-post"),
-    "https://www.notion.com/blog/test-post",
-  );
-  assertEquals(
-    postUrl("/test-post"),
-    "https://www.notion.com/blog/test-post",
-  );
-  assertEquals(
-    postUrl("https://other.com/post"),
-    "https://other.com/post",
-  );
+  assertEquals(postUrl("test-post"), "https://www.notion.com/blog/test-post");
+  assertEquals(postUrl("/test-post"), "https://www.notion.com/blog/test-post");
+  assertEquals(postUrl("https://other.com/post"), "https://other.com/post");
 });
 
 test("mediaType determines MIME type from extension", () => {

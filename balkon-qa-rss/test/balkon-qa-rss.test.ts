@@ -26,7 +26,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./balkon-qa.html", import.meta.url), "utf8",
+  new URL("./balkon-qa.html", import.meta.url),
+  "utf8",
 );
 const screenings = extractScreenings(html);
 const find = (id: string) => screenings.find((s) => s.id.startsWith(id))!;
@@ -41,7 +42,10 @@ test("reads every screening in the listing", () => {
     (html.match(/<li class="screening-item">/g) ?? []).length,
     "every item on the page became a screening",
   );
-  assert(screenings.every((s) => s.film && s.theater), "film and theater");
+  assert(
+    screenings.every((s) => s.film && s.theater),
+    "film and theater",
+  );
   assertEquals(
     new Set(screenings.map((s) => s.id)).size,
     screenings.length,
@@ -57,11 +61,18 @@ test("reads every field of a known screening", () => {
   assertEquals(s.times, ["6:30 PM"], "times");
   assertEquals(s.directors, ["Larry Fessenden"], "director");
   assertEquals(s.blurb, "Screening + Q&A with Larry Fessenden", "blurb");
-  assertEquals(s.guests, [{
-    name: "Larry Fessenden",
-    role: "Actor",
-    image: "https://image.tmdb.org/t/p/w185/imQGskBT7IjqHLVJDQFLR1h1UPH.jpg",
-  }], "guests");
+  assertEquals(
+    s.guests,
+    [
+      {
+        name: "Larry Fessenden",
+        role: "Actor",
+        image:
+          "https://image.tmdb.org/t/p/w185/imQGskBT7IjqHLVJDQFLR1h1UPH.jpg",
+      },
+    ],
+    "guests",
+  );
   assertEquals(s.link, "https://purchase.filmlinc.org/83576/83577", "tickets");
 });
 
@@ -240,8 +251,9 @@ test("dates every item to the fetch, not to the screening", async () => {
   // off to the top and reshuffle the feed as the calendar rolls; `now` means
   // "when this appeared in the listing", which is what FreshRSS stores on first
   // ingest and does not revise (its change hash excludes the date).
-  const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)]
-    .map((m) => Date.parse(m[1]));
+  const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
+    Date.parse(m[1]),
+  );
   assertEquals(new Set(dates).size, 1, "one timestamp across the feed");
   assertEquals(dates[0], NOW.getTime(), "and it is the fetch time");
 });
@@ -251,8 +263,9 @@ test("orders items soonest first", async () => {
   // a reader shows them in.
   // Only item titles are CDATA-wrapped; the channel's is entity-escaped, so
   // every match here is an item.
-  const titles = [...(await feed()).matchAll(/<title><!\[CDATA\[(.*?)\]\]>/g)]
-    .map((m) => m[1]);
+  const titles = [
+    ...(await feed()).matchAll(/<title><!\[CDATA\[(.*?)\]\]>/g),
+  ].map((m) => m[1]);
   assertEquals(titles.length, screenings.length, "one title per screening");
 
   const days = titles.map((t) => /· \w+ · \w+ (\d+)/.exec(t)?.[1] ?? "");
@@ -267,10 +280,7 @@ test("orders items soonest first", async () => {
 
 test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?city=la&date=2026-01-01");
-  assert(
-    body.includes(`href="${FEED_URL}" rel="self"`),
-    "bare self-link",
-  );
+  assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 44, "params ignored");
 });
 
@@ -290,11 +300,13 @@ const SAMPLE: Screening = {
   times: ["6:30 PM"],
   directors: ["Ada & Grace"],
   blurb: 'He said "hi"',
-  guests: [{
-    name: "Ada",
-    role: "Director",
-    image: "https://image.tmdb.org/t/p/w185/a.jpg",
-  }],
+  guests: [
+    {
+      name: "Ada",
+      role: "Director",
+      image: "https://image.tmdb.org/t/p/w185/a.jpg",
+    },
+  ],
   link: "https://tickets.example/1",
 };
 

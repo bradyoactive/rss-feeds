@@ -33,8 +33,7 @@ const SPACE = "1hpl803w8xsv";
 const ENVIRONMENT = "master";
 /** Read-only Content Delivery API token, as shipped to the browser. */
 const CDA_TOKEN = "c-uWotLcY4Kh6NTH4w15c0aH2n8cwxGTOvo98Nk8STE";
-const CDA_URL =
-  `https://cdn.contentful.com/spaces/${SPACE}/environments/${ENVIRONMENT}/entries`;
+const CDA_URL = `https://cdn.contentful.com/spaces/${SPACE}/environments/${ENVIRONMENT}/entries`;
 
 const CONTENT_TYPE = "careersBlogArticle";
 /** The category entry id behind /category/tech-blog/, as the page queries it. */
@@ -83,8 +82,7 @@ export function buildFeed(posts: Post[], url: URL): Response {
 
   const xml = renderRss({
     title: `Robinhood — ${CATEGORY_NAME}`,
-    description:
-      `Posts in the “${CATEGORY_NAME}” category of the Robinhood careers blog.`,
+    description: `Posts in the “${CATEGORY_NAME}” category of the Robinhood careers blog.`,
     siteLink: CATEGORY_URL,
     feedUrl: `${url.origin}${url.pathname}`,
     items,
@@ -282,7 +280,7 @@ function postUrl(slug: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

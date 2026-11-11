@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./asana-engineering-spotlight.html", import.meta.url), "utf8",
+  new URL("./asana-engineering-spotlight.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const byPath = (path: string) => posts.find((p) => p.path === path);
@@ -68,9 +69,7 @@ test("every post has an image and a valid media type", () => {
 });
 
 test("reads a known post's fields accurately", () => {
-  const p = byPath(
-    "/inside-asana/database-architecture-sharding-scaling",
-  )!;
+  const p = byPath("/inside-asana/database-architecture-sharding-scaling")!;
   assert(p, "post exists");
   assertEquals(
     p.title,
@@ -135,10 +134,7 @@ test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
     parseDate("2026-10-10T00:00:00.000Z"),
     Date.parse("2026-10-10T00:00:00.000Z"),
   );
-  assertEquals(
-    parseDate("2026-05-15"),
-    Date.UTC(2026, 4, 15, 0, 0, 0),
-  );
+  assertEquals(parseDate("2026-05-15"), Date.UTC(2026, 4, 15, 0, 0, 0));
   assertEquals(
     parseDate("2026-05-15T14:30:00"),
     Date.UTC(2026, 4, 15, 14, 30, 0),
@@ -157,10 +153,7 @@ test("postUrl prepends SITE domain appropriately", () => {
     postUrl("inside-asana/test-post"),
     "https://asana.com/inside-asana/test-post",
   );
-  assertEquals(
-    postUrl("https://other.com/post"),
-    "https://other.com/post",
-  );
+  assertEquals(postUrl("https://other.com/post"), "https://other.com/post");
 });
 
 test("mediaType determines MIME type from extension or defaults to image/jpeg", () => {

@@ -110,9 +110,10 @@ export function extractPosts(html: string): Post[] {
     throw new Error(`Failed to parse __NEXT_DATA__ JSON: ${err}`);
   }
 
-  const page = obj(obj(payload.props)?.pageProps)?.page as
-    | Record<string, unknown>
-    | null;
+  const page = obj(obj(payload.props)?.pageProps)?.page as Record<
+    string,
+    unknown
+  > | null;
   const cards = list(obj(page?.pageTemplate)?.cards);
 
   const byPath = new Map<string, Post>();
@@ -156,9 +157,9 @@ export function renderRss(feed: {
   feedUrl: string;
   items: Post[];
 }): string {
-  const dates = feed.items.map((p) => p.ts).filter((ts): ts is number =>
-    ts !== null
-  );
+  const dates = feed.items
+    .map((p) => p.ts)
+    .filter((ts): ts is number => ts !== null);
 
   const out = new Feed({
     title: clean(feed.title),
@@ -190,8 +191,8 @@ export function renderRss(feed: {
 export function parseDate(v: unknown): number | null {
   const s = str(v).trim();
   if (!s) return null;
-  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/
-    .exec(s);
+  const naive =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/.exec(s);
   if (naive) {
     const [y, mo, d, h, mi, sec] = naive.slice(1).map(Number);
     return Date.UTC(y, mo - 1, d, h || 0, mi || 0, sec || 0);

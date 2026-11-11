@@ -21,7 +21,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./robinhood-contentful-tech-blog.json", import.meta.url), "utf8",
+    new URL("./robinhood-contentful-tech-blog.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -30,15 +31,27 @@ const post = (slug: string) => posts.find((p) => p.slug.startsWith(slug))!;
 test("reads every entry in the category", () => {
   assertEquals(raw.total, 4, "entries Contentful reports");
   assertEquals(posts.length, 4, "posts");
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
     "slugs are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.description), "every post has a description");
-  assert(posts.every((p) => p.image), "every post has a featured image");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.description),
+    "every post has a description",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has a featured image",
+  );
 });
 
 test("reads every field of a known item", () => {
@@ -112,37 +125,39 @@ test("joins the runs of a paragraph without inserting spaces", () => {
   // A linked or bolded phrase is its own text node inside the paragraph, so
   // the nodes join with nothing between them.
   const marked = {
-    items: [{
-      fields: {
-        slug: "s",
-        title: "T",
-        publishDate: "2026-01-01T00:00Z",
-        categories: [{ sys: { id: "cat" } }],
-        content: {
-          content: [
-            {
-              nodeType: "heading-1",
-              content: [{ nodeType: "text", value: "H" }],
-            },
-            {
-              nodeType: "paragraph",
-              content: [{ nodeType: "text", value: "   " }],
-            },
-            {
-              nodeType: "paragraph",
-              content: [
-                { nodeType: "text", value: "We sat down with " },
-                {
-                  nodeType: "hyperlink",
-                  content: [{ nodeType: "text", value: "Ada" }],
-                },
-                { nodeType: "text", value: ", who built it." },
-              ],
-            },
-          ],
+    items: [
+      {
+        fields: {
+          slug: "s",
+          title: "T",
+          publishDate: "2026-01-01T00:00Z",
+          categories: [{ sys: { id: "cat" } }],
+          content: {
+            content: [
+              {
+                nodeType: "heading-1",
+                content: [{ nodeType: "text", value: "H" }],
+              },
+              {
+                nodeType: "paragraph",
+                content: [{ nodeType: "text", value: "   " }],
+              },
+              {
+                nodeType: "paragraph",
+                content: [
+                  { nodeType: "text", value: "We sat down with " },
+                  {
+                    nodeType: "hyperlink",
+                    content: [{ nodeType: "text", value: "Ada" }],
+                  },
+                  { nodeType: "text", value: ", who built it." },
+                ],
+              },
+            ],
+          },
         },
       },
-    }],
+    ],
     includes: {
       Entry: [{ sys: { id: "cat" }, fields: { name: "Tech Blog" } }],
     },
@@ -157,15 +172,17 @@ test("joins the runs of a paragraph without inserting spaces", () => {
 
 test("falls back to the SEO description when there is no body", () => {
   const seoOnly = {
-    items: [{
-      fields: {
-        slug: "s",
-        title: "T",
-        publishDate: "2026-01-01T00:00Z",
-        categories: [{ sys: { id: "cat" } }],
-        seo: { sys: { id: "seo" } },
+    items: [
+      {
+        fields: {
+          slug: "s",
+          title: "T",
+          publishDate: "2026-01-01T00:00Z",
+          categories: [{ sys: { id: "cat" } }],
+          seo: { sys: { id: "seo" } },
+        },
       },
-    }],
+    ],
     includes: {
       Entry: [
         { sys: { id: "cat" }, fields: { name: "Tech Blog" } },
@@ -208,7 +225,10 @@ test("keeps another category out even if the filter loosens", () => {
       ],
     },
   };
-  assertEquals(extractPosts(mixed).map((p) => p.slug), ["ours"]);
+  assertEquals(
+    extractPosts(mixed).map((p) => p.slug),
+    ["ours"],
+  );
 });
 
 test("survives input that is not the response we asked for", () => {
@@ -259,9 +279,13 @@ test("serves the Tech Blog category", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

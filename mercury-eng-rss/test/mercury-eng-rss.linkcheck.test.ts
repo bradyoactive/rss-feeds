@@ -63,8 +63,9 @@ liveTest(
 
     const res = await fetch(link);
     const html = await res.text();
-    const slugs =
-      stubs.map((s) => s.slug).filter((slug) => html.includes(slug)).length;
+    const slugs = stubs
+      .map((s) => s.slug)
+      .filter((slug) => html.includes(slug)).length;
     if (!slugs) {
       throw new Error(
         `mercury search page served but listed none of its ${stubs.length} posts: ${link}`,

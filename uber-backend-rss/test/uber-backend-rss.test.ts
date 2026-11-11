@@ -48,15 +48,27 @@ const feed = (query = "") =>
 test("reads every post the category holds", () => {
   assertEquals(rawPosts.data.totalCount, 120, "posts the API reports");
   assertEquals(posts.length, 120, "posts read");
-  assert(posts.every((p) => p.url && p.title), "every post has a URL/title");
+  assert(
+    posts.every((p) => p.url && p.title),
+    "every post has a URL/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.url)).size,
     posts.length,
     "URLs are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.image), "every post has an image");
-  assert(posts.every((p) => p.categories.includes("Backend")), "in-category");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has an image",
+  );
+  assert(
+    posts.every((p) => p.categories.includes("Backend")),
+    "in-category",
+  );
 });
 
 test("one request covers the category with room to spare", () => {
@@ -136,10 +148,7 @@ test("prefers `title` over `ogTitle`", () => {
     title: "Kept",
     ogTitle: "Stale",
   };
-  assertEquals(
-    extractPosts({ relatedPages: [entry] })[0].title,
-    "Kept",
-  );
+  assertEquals(extractPosts({ relatedPages: [entry] })[0].title, "Kept");
 });
 
 test("collapses a double space the rendered page would have folded", () => {
@@ -157,10 +166,9 @@ test("turns category ids into names, and drops ones it cannot", () => {
     title: "T",
     categoryIDs: ["b374768e-489f-42d5-913d-269fbb44a44b", "not-a-real-id"],
   };
-  assertEquals(
-    extractPosts({ relatedPages: [entry] }, names)[0].categories,
-    ["Backend"],
-  );
+  assertEquals(extractPosts({ relatedPages: [entry] }, names)[0].categories, [
+    "Backend",
+  ]);
   assertEquals(
     extractPosts({ relatedPages: [entry] })[0].categories,
     [],
@@ -172,7 +180,7 @@ test("gives every post an absolute link", () => {
   // `fullURL` comes back scheme-less.
   assert(
     rawPosts.data.relatedPages.every((r: { fullURL: string }) =>
-      r.fullURL.startsWith("www.uber.com/")
+      r.fullURL.startsWith("www.uber.com/"),
     ),
     "the API stores them without a scheme",
   );
@@ -237,7 +245,10 @@ test("serves the category", async () => {
 test("names every image's media type", async () => {
   const body = await feed();
   assert(!body.includes('type="image/jpg"'), "no invalid image/jpg");
-  assert(posts.every((p) => p.imageType), "the API's URLs all carry one");
+  assert(
+    posts.every((p) => p.imageType),
+    "the API's URLs all carry one",
+  );
   assertEquals(
     [...new Set(posts.map((p) => p.imageType))].sort(),
     ["image/gif", "image/jpeg", "image/png", "image/webp"],
@@ -259,10 +270,14 @@ test("carries no description and no byline", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
   assertEquals(dates.length, 120, "every item is dated");
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("dates by publication, not by last edit", async () => {
@@ -271,7 +286,7 @@ test("dates by publication, not by last edit", async () => {
   const kafka = post("kafka-async-queuing-with-consumer-proxy");
   assertEquals(kafka.ts, Date.parse("2021-08-31T02:00:32Z"), "published 2021");
   const raw = rawPosts.data.relatedPages.find((r: { fullURL: string }) =>
-    r.fullURL.includes("kafka-async-queuing")
+    r.fullURL.includes("kafka-async-queuing"),
   );
   assert(
     Date.parse(raw.updatedAt) > Date.parse(raw.publishedAt),

@@ -26,7 +26,10 @@ liveTest("every post link resolves", async () => {
 });
 
 liveTest("every featured image resolves", async () => {
-  await assertAllServed(posts.map((p) => p.image), "robinhood images");
+  await assertAllServed(
+    posts.map((p) => p.image),
+    "robinhood images",
+  );
 });
 
 liveTest("the category page the channel links to exists", async () => {

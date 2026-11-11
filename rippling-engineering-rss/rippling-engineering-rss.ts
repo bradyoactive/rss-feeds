@@ -27,8 +27,7 @@ const SITE = "https://www.rippling.com";
 const ALGOLIA_APP_ID = "6FNAX3TBEF";
 const ALGOLIA_API_KEY = "416caa4690f002ff6fe4a2097623640b";
 const ALGOLIA_INDEX = "blog_en-US_production";
-const ALGOLIA_URL =
-  `https://${ALGOLIA_APP_ID.toLowerCase()}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
+const ALGOLIA_URL = `https://${ALGOLIA_APP_ID.toLowerCase()}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
 
 /** Rippling's own spelling of the hub, which is what the filter matches. */
 const HUB = "Engineering";
@@ -105,7 +104,9 @@ export function extractPosts(payload: unknown): Post[] {
     if (!slug || !title || bySlug.has(slug)) continue;
 
     // A post can sit in several hubs at once, so this is a membership test.
-    const hubs = list(hit.hubs).map((h) => str(h.name)).filter(Boolean);
+    const hubs = list(hit.hubs)
+      .map((h) => str(h.name))
+      .filter(Boolean);
     if (!hubs.includes(HUB)) continue;
 
     const file = obj(obj(obj(hit.featuredImage)?.fields)?.file);
@@ -115,8 +116,10 @@ export function extractPosts(payload: unknown): Post[] {
       title,
       description: str(hit.excerpt),
       ts: parseDate(hit.publishedDate),
-      author: list(hit.authors).map((a) => str(a.fullName) || str(a.name))
-        .filter(Boolean).join(" & "),
+      author: list(hit.authors)
+        .map((a) => str(a.fullName) || str(a.name))
+        .filter(Boolean)
+        .join(" & "),
       image: absolute(str(file?.url)),
       imageType: str(file?.contentType),
       hubs,
@@ -207,8 +210,8 @@ function absolute(url: string): string {
  */
 function parseDate(v: unknown): number | null {
   const s = str(v).trim();
-  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/
-    .exec(s);
+  const naive =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/.exec(s);
   if (naive) {
     // The time groups are absent on the date-only shape, hence the `|| 0`.
     const [y, mo, d, h, mi, sec] = naive.slice(1).map(Number);
@@ -224,7 +227,7 @@ function postUrl(slug: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

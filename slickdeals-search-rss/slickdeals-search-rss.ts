@@ -123,8 +123,8 @@ const API_SORTS = ["recent", "popular", "relevance"] as const;
 /** Sorts this val performs, because the API ignores them. */
 const LOCAL_SORTS = ["views", "votes", "comments", "price", "-price"] as const;
 
-export type Rating = typeof RATINGS[number];
-export type Sort = typeof API_SORTS[number] | typeof LOCAL_SORTS[number];
+export type Rating = (typeof RATINGS)[number];
+export type Sort = (typeof API_SORTS)[number] | (typeof LOCAL_SORTS)[number];
 
 export interface Options {
   q: string;
@@ -244,11 +244,13 @@ function num(
 
 /** The UTC offset `SITE_TZ` is at on a given instant, in ms. DST-correct. */
 function offsetMs(ts: number): number {
-  const name = new Intl.DateTimeFormat("en-US", {
-    timeZone: SITE_TZ,
-    timeZoneName: "longOffset",
-  }).formatToParts(new Date(ts))
-    .find((p) => p.type === "timeZoneName")?.value ?? "";
+  const name =
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: SITE_TZ,
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(new Date(ts))
+      .find((p) => p.type === "timeZoneName")?.value ?? "";
   // "GMT-07:00" in summer, "GMT-08:00" in winter, bare "GMT" at UTC.
   const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
   if (!m) return 0;
@@ -263,9 +265,10 @@ function offsetMs(ts: number): number {
  */
 function instantOf(date: string, hour: number, minute: number): number {
   const wall = Date.parse(
-    `${date}T${String(hour).padStart(2, "0")}:${
-      String(minute).padStart(2, "0")
-    }:00Z`,
+    `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(
+      2,
+      "0",
+    )}:00Z`,
   );
   if (!Number.isFinite(wall)) return NaN;
   const first = wall - offsetMs(wall);
@@ -344,10 +347,9 @@ export function parseOptions(url: URL, now: number = Date.now()): Options {
   ].filter(([, v]) => v !== null);
   if (lower.length > 1) {
     throw new BadRequest(
-      `${
-        lower.map(([k]) => k).join(" and ")
-      } all set the start of the window — ` +
-        "use one of them",
+      `${lower
+        .map(([k]) => k)
+        .join(" and ")} all set the start of the window — ` + "use one of them",
     );
   }
   let since: number | null = null;
@@ -665,9 +667,9 @@ export function buildFeed(
     : ` — NOTE: this feed reads only the newest ${o.pool} results Slickdeals returns, so this window is only partly covered. Narrow it with rating, q, discount or forums to reach further back.`;
   const feed = new Feed({
     title: title(o),
-    description: `Slickdeals search: ${
-      describeFilters(o)
-    }, sorted by ${o.sort}.${shortfall}`,
+    description: `Slickdeals search: ${describeFilters(
+      o,
+    )}, sorted by ${o.sort}.${shortfall}`,
     id: `${SITE}/deals`,
     link: `${SITE}/deals`,
     language: "en",

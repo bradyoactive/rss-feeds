@@ -136,9 +136,9 @@ export function extractPosts(payload: unknown): Post[] {
     const title = str(fields?.title);
     if (!path || !title || byPath.has(path)) continue;
 
-    const tags = many(fields?.post_tags).map((t) => str(t.label)).filter(
-      Boolean,
-    );
+    const tags = many(fields?.post_tags)
+      .map((t) => str(t.label))
+      .filter(Boolean);
     if (!tags.includes(TAG)) continue;
 
     // `date` is the editorial publication date; `publishedAt` is when the
@@ -154,7 +154,7 @@ export function extractPosts(payload: unknown): Post[] {
       ts: Number.isFinite(ts) ? ts : null,
       author: many(fields?.authors)
         .map((a) =>
-          [str(a.firstName), str(a.lastName)].filter(Boolean).join(" ")
+          [str(a.firstName), str(a.lastName)].filter(Boolean).join(" "),
         )
         .filter(Boolean)
         .join(" & "),
@@ -175,7 +175,7 @@ export function extractPosts(payload: unknown): Post[] {
  */
 function one(relation: unknown): Record<string, unknown> | null {
   const inner = obj(obj(relation)?.data);
-  return inner ? obj(inner.attributes) ?? inner : null;
+  return inner ? (obj(inner.attributes) ?? inner) : null;
 }
 
 function many(relation: unknown): Record<string, unknown>[] {
@@ -242,7 +242,8 @@ function postUrl(path: string): string {
  * FreshRSS, which decides an enclosure is an image by its mime type.
  */
 function mediaType(url: string): string {
-  const format = /\/f_([a-z0-9]+)[,/]/i.exec(url)?.[1] ??
+  const format =
+    /\/f_([a-z0-9]+)[,/]/i.exec(url)?.[1] ??
     /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1];
   if (!format) return "";
   const ext = format.toLowerCase();
@@ -251,7 +252,7 @@ function mediaType(url: string): string {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? v as Record<string, unknown>
+    ? (v as Record<string, unknown>)
     : null;
 }
 

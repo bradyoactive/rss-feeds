@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./anthropic-engineering.html", import.meta.url), "utf8",
+  new URL("./anthropic-engineering.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
@@ -72,11 +73,7 @@ test("extractPayload recovers dates and summaries from the RSC stream", () => {
 test("reads a known post's fields accurately", () => {
   const p = bySlug("redesigning-source-control")!;
   assert(p, "post exists");
-  assertEquals(
-    p.title,
-    "Redesigning source control at Anthropic",
-    "title",
-  );
+  assertEquals(p.title, "Redesigning source control at Anthropic", "title");
   assertEquals(
     p.description,
     "As our merges per day grew more than tenfold, source control became our biggest development bottleneck. Here, we share how we migrated to an in-house version control system in five months.",
@@ -108,10 +105,7 @@ test("decodes html entities in titles", () => {
 });
 
 test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
-  assertEquals(
-    parseDate("2026-10-13"),
-    Date.UTC(2026, 9, 13, 0, 0, 0),
-  );
+  assertEquals(parseDate("2026-10-13"), Date.UTC(2026, 9, 13, 0, 0, 0));
   assertEquals(
     parseDate("2026-05-25T14:30:00.000Z"),
     Date.parse("2026-05-25T14:30:00.000Z"),
@@ -131,10 +125,7 @@ test("postUrl prepends SITE domain appropriately", () => {
     postUrl("/test-slug"),
     "https://www.anthropic.com/research/test-slug",
   );
-  assertEquals(
-    postUrl("https://other.com/post"),
-    "https://other.com/post",
-  );
+  assertEquals(postUrl("https://other.com/post"), "https://other.com/post");
 });
 
 test("orders items newest first in buildFeed", () => {
@@ -171,9 +162,7 @@ test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
 
   assert(xml.includes("<title><![CDATA[Test Slug]]></title>"), "item title");
   assert(
-    xml.includes(
-      "<link>https://www.anthropic.com/research/test-slug</link>",
-    ),
+    xml.includes("<link>https://www.anthropic.com/research/test-slug</link>"),
     "item link",
   );
   assert(

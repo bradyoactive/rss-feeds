@@ -22,14 +22,13 @@ import handler, {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const pageHtml = await readFile(
-  new URL("./samsara-engineering.html", import.meta.url), "utf8",
+  new URL("./samsara-engineering.html", import.meta.url),
+  "utf8",
 );
 const payload = JSON.parse(
   await readFile(
-    new URL(
-      "./samsara-contentful-engineering.json",
-      import.meta.url,
-    ), "utf8",
+    new URL("./samsara-contentful-engineering.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(payload);
@@ -63,7 +62,10 @@ test("extracts every post in the category", () => {
 });
 
 test("resolves author and categories through includes", () => {
-  assert(posts.every((p) => p.author), "every post has an author");
+  assert(
+    posts.every((p) => p.author),
+    "every post has an author",
+  );
   assertEquals(posts[0].author, "Praveen Murugesan", "author");
   assertEquals(posts[0].categories, ["Engineering At Samsara"], "categories");
 
@@ -81,7 +83,7 @@ test("resolves author and categories through includes", () => {
 test("absolutizes asset URLs and takes their declared type", () => {
   assert(
     posts.every((p) =>
-      p.image.startsWith("https://images.ctfassets.net/bx9krvy0u3sx/")
+      p.image.startsWith("https://images.ctfassets.net/bx9krvy0u3sx/"),
     ),
     "protocol-relative asset URLs are made absolute",
   );
@@ -116,40 +118,48 @@ test("degrades on an entry missing its optional fields", () => {
   });
 
   assertEquals(bare.length, 1, "the untitled/unslugged entry is dropped");
-  assertEquals(bare[0], {
-    slug: "bare",
-    title: "Bare",
-    description: "",
-    ts: null,
-    author: "",
-    image: "",
-    imageType: "",
-    categories: [],
-  }, "bare post");
+  assertEquals(
+    bare[0],
+    {
+      slug: "bare",
+      title: "Bare",
+      description: "",
+      ts: null,
+      author: "",
+      image: "",
+      imageType: "",
+      categories: [],
+    },
+    "bare post",
+  );
   assertEquals(extractPosts({}).length, 0, "an empty payload yields nothing");
 });
 
 test("falls back from metaDescription and metaImage", () => {
   const [post] = extractPosts({
-    items: [{
-      sys: { createdAt: "2025-01-02T03:04:05Z" },
-      fields: {
-        title: "T",
-        blogPageSlug: "t",
-        summary: "Opening paragraph.",
-        backgroundImage: { sys: { id: "hdr", linkType: "Asset" } },
-      },
-    }],
-    includes: {
-      Asset: [{
-        sys: { id: "hdr" },
+    items: [
+      {
+        sys: { createdAt: "2025-01-02T03:04:05Z" },
         fields: {
-          file: {
-            url: "//images.ctfassets.net/x/h.jpg",
-            contentType: "image/jpeg",
+          title: "T",
+          blogPageSlug: "t",
+          summary: "Opening paragraph.",
+          backgroundImage: { sys: { id: "hdr", linkType: "Asset" } },
+        },
+      },
+    ],
+    includes: {
+      Asset: [
+        {
+          sys: { id: "hdr" },
+          fields: {
+            file: {
+              url: "//images.ctfassets.net/x/h.jpg",
+              contentType: "image/jpeg",
+            },
           },
         },
-      }],
+      ],
     },
   });
 
@@ -171,12 +181,16 @@ test("falls back from metaDescription and metaImage", () => {
 });
 
 test("reads Contentful credentials from the Nuxt config blob", () => {
-  assertEquals(extractCredentials(pageHtml), {
-    spaceId: "bx9krvy0u3sx",
-    accessToken:
-      "9247925a3764b651e63f560743ccc11a2f3d8d478143e2431409232986436f5f",
-    environment: "master",
-  }, "credentials");
+  assertEquals(
+    extractCredentials(pageHtml),
+    {
+      spaceId: "bx9krvy0u3sx",
+      accessToken:
+        "9247925a3764b651e63f560743ccc11a2f3d8d478143e2431409232986436f5f",
+      environment: "master",
+    },
+    "credentials",
+  );
 
   // The flattened pair is the same credentials, and outlives a nesting change.
   assertEquals(
@@ -224,17 +238,18 @@ test("serves the feed", async () => {
     body.includes("<category>Engineering At Samsara</category>"),
     "category",
   );
-  assert(
-    body.includes("<author>Praveen Murugesan</author>"),
-    "byline",
-  );
+  assert(body.includes("<author>Praveen Murugesan</author>"), "byline");
 });
 
 test("orders items newest first", async () => {
-  const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map((
-    m,
-  ) => Date.parse(m[1]));
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map(
+    (m) => Date.parse(m[1]),
+  );
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {
@@ -279,10 +294,7 @@ test("renders XML-safe output", () => {
     "item title survives verbatim inside CDATA",
   );
   assert(!xml.includes("]]]]"), "no stray CDATA breakout in ordinary text");
-  assert(
-    xml.includes("<pubDate>"),
-    "RFC-822 pubDate",
-  );
+  assert(xml.includes("<pubDate>"), "RFC-822 pubDate");
   // Control characters are illegal in XML 1.0 and the library does not strip
   // them, so the val must — one anywhere breaks the whole document.
   const dirty = renderRss({
@@ -315,16 +327,18 @@ test("omits optional elements when the post lacks them", () => {
     description: "D",
     siteLink: "https://www.samsara.com/blog",
     feedUrl: "https://www.samsara.com/blog",
-    items: [{
-      slug: "bare",
-      title: "Bare",
-      description: "",
-      ts: null,
-      author: "",
-      image: "",
-      imageType: "",
-      categories: [],
-    }],
+    items: [
+      {
+        slug: "bare",
+        title: "Bare",
+        description: "",
+        ts: null,
+        author: "",
+        image: "",
+        imageType: "",
+        categories: [],
+      },
+    ],
   });
 
   for (const tag of ["pubDate", "category", "dc:creator", "media:content"]) {
@@ -341,19 +355,23 @@ test("emits an enclosure without a type when the asset had none", () => {
   // Contentful normally states contentType; when it does not, the library is
   // left to infer, and the item must still carry its image.
   const [post] = extractPosts({
-    items: [{
-      sys: { createdAt: "2026-01-01" },
-      fields: {
-        title: "T",
-        blogPageSlug: "t",
-        metaImage: { sys: { id: "a", linkType: "Asset" } },
+    items: [
+      {
+        sys: { createdAt: "2026-01-01" },
+        fields: {
+          title: "T",
+          blogPageSlug: "t",
+          metaImage: { sys: { id: "a", linkType: "Asset" } },
+        },
       },
-    }],
+    ],
     includes: {
-      Asset: [{
-        sys: { id: "a" },
-        fields: { file: { url: "//images.ctfassets.net/x/y" } },
-      }],
+      Asset: [
+        {
+          sys: { id: "a" },
+          fields: { file: { url: "//images.ctfassets.net/x/y" } },
+        },
+      ],
     },
   });
   assertEquals(post.imageType, "", "no declared type");
@@ -400,15 +418,17 @@ const ROTATED =
 const entriesJson = () =>
   new Response(
     JSON.stringify({
-      items: [{
-        sys: { createdAt: "2026-01-01" },
-        fields: {
-          blogPageSlug: "s",
-          title: "T",
-          publishDate: "2026-01-01",
-          blogCategory: ["Engineering At Samsara"],
+      items: [
+        {
+          sys: { createdAt: "2026-01-01" },
+          fields: {
+            blogPageSlug: "s",
+            title: "T",
+            publishDate: "2026-01-01",
+            blogCategory: ["Engineering At Samsara"],
+          },
         },
-      }],
+      ],
     }),
     { status: 200 },
   );
@@ -461,7 +481,7 @@ test("a rotation the blog cannot explain fails loudly", async () => {
   const { calls, restore } = stubFetch((url) =>
     url.startsWith(CDN)
       ? unauthorized()
-      : new Response("<html>no config here</html>", { status: 200 })
+      : new Response("<html>no config here</html>", { status: 200 }),
   );
   try {
     const res = await handler(new Request("https://feed.val.run/samsara"));

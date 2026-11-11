@@ -23,7 +23,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./honeycomb-sanity-software-engineering.json", import.meta.url), "utf8",
+    new URL("./honeycomb-sanity-software-engineering.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -35,15 +36,27 @@ const feed = (query = "") =>
 
 test("reads every article in the topic", () => {
   assertEquals(posts.length, 100, "articles");
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
     "slugs are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.author), "every post has an author");
-  assert(posts.every((p) => p.image), "every post has an image");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.author),
+    "every post has an author",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has an image",
+  );
   assert(
     posts.every((p) => p.topics.includes("Software Engineering")),
     "every post carries the topic",
@@ -150,9 +163,13 @@ test("serves the topic", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

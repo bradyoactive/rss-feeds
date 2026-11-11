@@ -25,7 +25,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./figma-blog-search-index.json", import.meta.url), "utf8",
+    new URL("./figma-blog-search-index.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -33,7 +34,10 @@ const posts = extractPosts(raw);
 test("reads the tagged posts and only those", () => {
   assertEquals(raw.length, 33, "records in the fixture");
   assertEquals(posts.length, 23, "tagged Engineering");
-  assert(posts.every((p) => p.path && p.title), "every post has a path/title");
+  assert(
+    posts.every((p) => p.path && p.title),
+    "every post has a path/title",
+  );
   assert(
     posts.every((p) => p.labels.includes("Engineering")),
     "nothing from another tag leaks in",
@@ -70,8 +74,8 @@ test("matches the tag on its slug, not its display name", () => {
 });
 
 test("reads every field of a known item", () => {
-  const p = posts.find((p) =>
-    p.path === "/blog/the-benefits-of-code-connect-in-mcp/"
+  const p = posts.find(
+    (p) => p.path === "/blog/the-benefits-of-code-connect-in-mcp/",
   )!;
   assertEquals(
     p.title,
@@ -98,8 +102,8 @@ test("reads every field of a known item", () => {
 });
 
 test("joins several authors the way the byline reads", () => {
-  const p = posts.find((p) =>
-    p.path === "/blog/figma-rendering-powered-by-webgpu/"
+  const p = posts.find(
+    (p) => p.path === "/blog/figma-rendering-powered-by-webgpu/",
   )!;
   assertEquals(p.author, "Alex Ringlein & Luke Anderson");
 });
@@ -108,8 +112,8 @@ test("flattens the lede's portable text", () => {
   // Spans are the runs of one sentence, split where a link or emphasis starts,
   // so they join with nothing between them — a separator would insert spaces
   // mid-sentence. Blocks are paragraphs and do get one.
-  const linked = posts.find((p) =>
-    p.path === "/blog/how-magician-uses-figmas-text-review-api/"
+  const linked = posts.find(
+    (p) => p.path === "/blog/how-magician-uses-figmas-text-review-api/",
   )!;
   assert(
     linked.lede.startsWith(
@@ -118,28 +122,36 @@ test("flattens the lede's portable text", () => {
     `spans joined without separators, got: ${linked.lede.slice(0, 60)}`,
   );
 
-  const paragraphs = posts.find((p) =>
-    p.path === "/blog/inside-figma-how-figma-engineering-uses-figjam-to-scale/"
+  const paragraphs = posts.find(
+    (p) =>
+      p.path ===
+      "/blog/inside-figma-how-figma-engineering-uses-figjam-to-scale/",
   )!;
   assert(paragraphs.lede.length > 0, "a multi-block lede still reads as text");
   assert(!/\s{2,}/.test(paragraphs.lede), "no doubled whitespace at the seams");
 
-  assert(posts.every((p) => p.lede), "every post in the fixture has a lede");
+  assert(
+    posts.every((p) => p.lede),
+    "every post in the fixture has a lede",
+  );
 });
 
 test("reads dates in both shapes the index stores", () => {
   // Older posts carry a bare "2025-09-18" and newer ones a Z-suffixed instant.
   // Date.parse reads both as UTC; a naive datetime would have been read as
   // local time and shifted by however many hours the val happened to run at.
-  const dateOnly = posts.find((p) =>
-    p.path === "/blog/figma-rendering-powered-by-webgpu/"
+  const dateOnly = posts.find(
+    (p) => p.path === "/blog/figma-rendering-powered-by-webgpu/",
   )!;
   assertEquals(
     dateOnly.ts,
     Date.UTC(2025, 8, 18),
     "date-only, at UTC midnight",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
 });
 
 test("takes the cover image when the card has none", () => {
@@ -198,9 +210,13 @@ test("serves the Engineering tag", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

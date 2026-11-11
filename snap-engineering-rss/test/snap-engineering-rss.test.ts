@@ -25,7 +25,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./snap-engineering.html", import.meta.url), "utf8",
+  new URL("./snap-engineering.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
@@ -46,15 +47,8 @@ test("extracts all posts from the fixture", () => {
 test("reads a known Tile post's fields accurately", () => {
   const p = bySlug("ds_agent")!;
   assert(p, "post exists");
-  assertEquals(
-    p.title,
-    "DS Agent: Snap's AI Data Scientist",
-    "title",
-  );
-  assert(
-    p.description.includes("Part 1 of a series on DS Agent"),
-    "summary",
-  );
+  assertEquals(p.title, "DS Agent: Snap's AI Data Scientist", "title");
+  assert(p.description.includes("Part 1 of a series on DS Agent"), "summary");
   assertEquals(p.author, "Snap Engineering", "author");
   assertEquals(p.ts, Date.parse("2026-09-10T18:09:45.672Z"), "date");
   assertEquals(p.categories, ["Engineering"], "categories");
@@ -90,18 +84,9 @@ test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
 });
 
 test("postUrl prepends SITE domain appropriately", () => {
-  assertEquals(
-    postUrl("ds_agent"),
-    "https://eng.snap.com/ds_agent",
-  );
-  assertEquals(
-    postUrl("/ds_agent"),
-    "https://eng.snap.com/ds_agent",
-  );
-  assertEquals(
-    postUrl("https://other.com/post"),
-    "https://other.com/post",
-  );
+  assertEquals(postUrl("ds_agent"), "https://eng.snap.com/ds_agent");
+  assertEquals(postUrl("/ds_agent"), "https://eng.snap.com/ds_agent");
+  assertEquals(postUrl("https://other.com/post"), "https://other.com/post");
 });
 
 test("mediaType determines MIME type from extension", () => {

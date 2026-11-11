@@ -33,24 +33,39 @@ const feed = (query = "") =>
 
 test("reads the Engineering posts and only those", () => {
   assertEquals(posts.length, 30, "Engineering posts");
-  assert(posts.every((p) => p.category === "Engineering"), "one category");
-  assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
+  assert(
+    posts.every((p) => p.category === "Engineering"),
+    "one category",
+  );
+  assert(
+    posts.every((p) => p.slug && p.title),
+    "every post has a slug/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.slug)).size,
     posts.length,
     "slugs are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.description), "every post has a description");
-  assert(posts.every((p) => p.image), "every post has an image");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.description),
+    "every post has a description",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has an image",
+  );
 });
 
 test("filters a listing that holds every category", () => {
   // The category filter runs in the browser, so the payload is the whole blog
   // and the val has to do the narrowing itself.
-  const all = (devalue(
-    (raw.nodes as any[]).find((n) => n?.data?.length > 100).data,
-  ) as any).posts;
+  const all = (
+    devalue((raw.nodes as any[]).find((n) => n?.data?.length > 100).data) as any
+  ).posts;
   assertEquals(all.length, 130, "posts in the payload");
   const categories = new Set(all.map((p: { category: string }) => p.category));
   assert(
@@ -83,8 +98,7 @@ test("reads both date shapes the listing stores", () => {
   assertEquals(
     new Date(
       post("bringing-serverless-functions-closer-to-the-speed-of-wire").ts!,
-    )
-      .toISOString(),
+    ).toISOString(),
     "2026-08-04T00:00:00.000Z",
     "a date-only value lands at UTC midnight",
   );
@@ -158,30 +172,35 @@ test("finds the posts by shape, not by node position", () => {
       },
     ],
   };
-  assertEquals(extractPosts(moved).map((p) => p.slug), ["s"]);
+  assertEquals(
+    extractPosts(moved).map((p) => p.slug),
+    ["s"],
+  );
 });
 
 test("leaves an unpublished post out", () => {
   const record = (published: boolean) => ({
-    nodes: [{
-      type: "data",
-      data: [
-        { posts: 1 },
-        [2],
-        {
-          slug: 3,
-          title: 4,
-          category: 5,
-          date: 6,
-          published: 7,
-        },
-        "s",
-        "T",
-        "Engineering",
-        "2026-01-01",
-        published,
-      ],
-    }],
+    nodes: [
+      {
+        type: "data",
+        data: [
+          { posts: 1 },
+          [2],
+          {
+            slug: 3,
+            title: 4,
+            category: 5,
+            date: 6,
+            published: 7,
+          },
+          "s",
+          "T",
+          "Engineering",
+          "2026-01-01",
+          published,
+        ],
+      },
+    ],
   });
   assertEquals(extractPosts(record(true)).length, 1, "published");
   assertEquals(extractPosts(record(false)).length, 0, "unpublished");
@@ -189,19 +208,21 @@ test("leaves an unpublished post out", () => {
 
 test("resolves a site-relative image against modal.com", async () => {
   const payload = {
-    nodes: [{
-      type: "data",
-      data: [
-        { posts: 1 },
-        [2],
-        { slug: 3, title: 4, category: 5, date: 6, image: 7 },
-        "s",
-        "T",
-        "Engineering",
-        "2026-01-01",
-        "/assets/blog/nvidia-vera.webp",
-      ],
-    }],
+    nodes: [
+      {
+        type: "data",
+        data: [
+          { posts: 1 },
+          [2],
+          { slug: 3, title: 4, category: 5, date: 6, image: 7 },
+          "s",
+          "T",
+          "Engineering",
+          "2026-01-01",
+          "/assets/blog/nvidia-vera.webp",
+        ],
+      },
+    ],
   };
   const posts = extractPosts(payload);
   assertEquals(
@@ -257,9 +278,13 @@ test("credits no author, because the listing names none", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {

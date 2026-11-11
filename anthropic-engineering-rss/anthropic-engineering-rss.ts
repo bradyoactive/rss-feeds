@@ -126,8 +126,8 @@ export function extractPosts(html: string): Post[] {
     const timeMatch = articleHtml.match(
       /<time\b(?:[^>]*\sdateTime="([^"]+)")?[^>]*>([^<]*)<\/time>/i,
     );
-    const ts = parseDate(timeMatch?.[1] || timeMatch?.[2]) ??
-      parseDate(meta?.date);
+    const ts =
+      parseDate(timeMatch?.[1] || timeMatch?.[2]) ?? parseDate(meta?.date);
 
     bySlug.set(slug, {
       slug,
@@ -159,8 +159,9 @@ export function extractPayload(
   const records = html.split(/\\"_id\\":/).slice(1);
   for (const record of records) {
     const slug =
-      /\\"slug\\":\{\\"_type\\":\\"slug\\",\\"current\\":\\"([^"\\]+)\\"/
-        .exec(record)?.[1];
+      /\\"slug\\":\{\\"_type\\":\\"slug\\",\\"current\\":\\"([^"\\]+)\\"/.exec(
+        record,
+      )?.[1];
     if (!slug || out.has(slug)) continue;
     const date = /\\"publishedOn\\":\\"([0-9-]+)\\"/.exec(record)?.[1];
     const rawSummary = /\\"summary\\":\\"(.*?)\\",\\"/.exec(record)?.[1];
@@ -187,9 +188,9 @@ export function renderRss(feed: {
   feedUrl: string;
   items: Post[];
 }): string {
-  const dates = feed.items.map((p) => p.ts).filter((ts): ts is number =>
-    ts !== null
-  );
+  const dates = feed.items
+    .map((p) => p.ts)
+    .filter((ts): ts is number => ts !== null);
 
   const out = new Feed({
     title: clean(feed.title),
@@ -221,8 +222,8 @@ export function renderRss(feed: {
 export function parseDate(v: unknown): number | null {
   const s = str(v).trim();
   if (!s) return null;
-  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/
-    .exec(s);
+  const naive =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?$/.exec(s);
   if (naive) {
     const [y, mo, d, h, mi, sec] = naive.slice(1).map(Number);
     return Date.UTC(y, mo - 1, d, h || 0, mi || 0, sec || 0);
@@ -244,8 +245,10 @@ export function postUrl(slug: string): string {
 export function mediaType(url: string): string {
   // Card images are resized through the CDN, and its `fm` param, not the
   // file's extension, decides what format comes back.
-  const ext = (/[?&]fm=([a-z0-9]+)/i.exec(url)?.[1] ??
-    /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1])?.toLowerCase();
+  const ext = (
+    /[?&]fm=([a-z0-9]+)/i.exec(url)?.[1] ??
+    /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1]
+  )?.toLowerCase();
   if (ext) {
     if (ext === "svg") return "image/svg+xml";
     if (ext === "jpg") return "image/jpeg";

@@ -43,9 +43,7 @@ import {
 } from "../slickdeals-search-rss.ts";
 
 const raw = JSON.parse(
-  await readFile(
-    new URL("./slickdeals-search.json", import.meta.url), "utf8",
-  ),
+  await readFile(new URL("./slickdeals-search.json", import.meta.url), "utf8"),
 );
 const deals = extractDeals(raw);
 const NOW = new Date("2026-08-29T12:00:00Z");
@@ -105,11 +103,7 @@ test("bad values are rejected rather than silently ignored", () => {
   assertThrows(() => opts("hideExpired=maybe"), Error, "true or false");
   assertThrows(() => opts("forums=9,abc"), Error, "numeric ids");
   assertThrows(() => opts("pool=99999"), Error, "between");
-  assertThrows(
-    () => opts("priceMin=100&priceMax=50"),
-    Error,
-    "above priceMax",
-  );
+  assertThrows(() => opts("priceMin=100&priceMax=50"), Error, "above priceMax");
 });
 
 test("blank parameters are treated as absent, not as zero", () => {
@@ -220,7 +214,10 @@ test("rows without an id or a link are skipped, not half-parsed", () => {
       { threadId: 3, dealTitle: "no link" },
     ],
   });
-  assertEquals(got.map((d) => d.id), ["1"]);
+  assertEquals(
+    got.map((d) => d.id),
+    ["1"],
+  );
 });
 
 test("duplicate thread ids collapse", () => {
@@ -279,11 +276,14 @@ test("an unpriced row survives when no price bound is set", () => {
 });
 
 test("hideExpired removes expired deals, and is off by default", () => {
-  assert(deals.some((d) => d.expired), "fixture lost its expired rows");
+  assert(
+    deals.some((d) => d.expired),
+    "fixture lost its expired rows",
+  );
   assert(applyFilters(deals, opts("limit=500")).some((d) => d.expired));
   assertEquals(
-    applyFilters(deals, opts("hideExpired=true&limit=500")).filter((d) =>
-      d.expired
+    applyFilters(deals, opts("hideExpired=true&limit=500")).filter(
+      (d) => d.expired,
     ).length,
     0,
   );
@@ -302,19 +302,14 @@ test("filters compose rather than override one another", () => {
 /* -- sorting --------------------------------------------------------------- */
 
 test("local sorts order descending by their metric", () => {
-  for (
-    const [sort, get] of [
-      ["views", (d: Deal) => d.views],
-      ["votes", (d: Deal) => d.votes],
-      ["comments", (d: Deal) => d.comments],
-    ] as const
-  ) {
+  for (const [sort, get] of [
+    ["views", (d: Deal) => d.views],
+    ["votes", (d: Deal) => d.votes],
+    ["comments", (d: Deal) => d.comments],
+  ] as const) {
     const got = applyFilters(deals, opts(`sort=${sort}&limit=500`));
     for (let i = 1; i < got.length; i++) {
-      assert(
-        get(got[i - 1]) >= get(got[i]),
-        `${sort} out of order at ${i}`,
-      );
+      assert(get(got[i - 1]) >= get(got[i]), `${sort} out of order at ${i}`);
     }
   }
 });
@@ -345,7 +340,10 @@ test("unpriced rows sort last, never first", () => {
 
 test("the default sort leaves the API's order alone", () => {
   const got = applyFilters(deals, opts("limit=500"));
-  assertEquals(got.map((d) => d.id), deals.map((d) => d.id));
+  assertEquals(
+    got.map((d) => d.id),
+    deals.map((d) => d.id),
+  );
 });
 
 test("limit caps the feed and defaults to 50", () => {
@@ -385,8 +383,9 @@ test("a resolved thumbnail type replaces the JPEG default", () => {
     o,
     NOW,
   );
-  const types = [...xml.matchAll(/<enclosure[^>]*\stype="([^"]+)"/g)]
-    .map((m) => m[1]);
+  const types = [...xml.matchAll(/<enclosure[^>]*\stype="([^"]+)"/g)].map(
+    (m) => m[1],
+  );
   assertEquals(types, ["image/png", "image/jpeg"]);
 });
 
@@ -513,7 +512,10 @@ test("an undated deal is dropped by a window, like an unpriced one", () => {
   });
   assertEquals(rows.length, 2);
   const o = { ...opts(), since: Date.parse("2026-08-01T00:00:00Z") };
-  assertEquals(applyFilters(rows, o).map((d) => d.id), ["1"]);
+  assertEquals(
+    applyFilters(rows, o).map((d) => d.id),
+    ["1"],
+  );
   // ...but survives when no window is set.
   assertEquals(applyFilters(rows, opts()).length, 2);
 });
@@ -614,10 +616,7 @@ test("the same input twice produces byte-identical output", () => {
 
 test("titles and descriptions describe the actual filters", () => {
   const o = opts("rating=frontpage&minViews=5000&priceMax=100");
-  assertEquals(
-    describeFilters(o),
-    "rated frontpage, 5000+ views, under $100",
-  );
+  assertEquals(describeFilters(o), "rated frontpage, 5000+ views, under $100");
   assert(title(o).startsWith("Slickdeals — "));
   const xml = buildFeed(applyFilters(deals, o), o, NOW);
   assert(xml.includes("5000+ views"));
@@ -638,16 +637,18 @@ test("an empty result set still renders a valid feed", () => {
 
 test("the price is in the item title, not its body", () => {
   const [d] = extractDeals({
-    deals: [{
-      threadId: 1,
-      dealTitle: "USB-C Charger",
-      dealAdditionalInfo: "+ Free S&H",
-      dealThreadUrl: "/f/1-x",
-      finalPriceText: "$17",
-      listPriceText: "$30",
-      discount: 43,
-      storeName: "Amazon",
-    }],
+    deals: [
+      {
+        threadId: 1,
+        dealTitle: "USB-C Charger",
+        dealAdditionalInfo: "+ Free S&H",
+        dealThreadUrl: "/f/1-x",
+        finalPriceText: "$17",
+        listPriceText: "$30",
+        discount: 43,
+        storeName: "Amazon",
+      },
+    ],
   });
   assertEquals(headline(d), "USB-C Charger — $17 + Free S&H");
   const xml = buildFeed([d], opts("showStats=0"), NOW);
@@ -668,14 +669,16 @@ test("hostile deal text cannot break out of the XML", () => {
   // terminate the CDATA early — hence the "]]>" case, which the library escapes
   // by splitting the section.
   const nasty = extractDeals({
-    deals: [{
-      threadId: 9,
-      dealTitle: 'Sale <script>alert("x")</script> & more',
-      dealAdditionalInfo: "ends ]]> soon",
-      dealThreadUrl: "/f/9-x",
-      finalPriceText: "$5",
-      storeName: "A&B <b>Co</b>",
-    }],
+    deals: [
+      {
+        threadId: 9,
+        dealTitle: 'Sale <script>alert("x")</script> & more',
+        dealAdditionalInfo: "ends ]]> soon",
+        dealThreadUrl: "/f/9-x",
+        finalPriceText: "$5",
+        storeName: "A&B <b>Co</b>",
+      },
+    ],
   });
   const xml = buildFeed(nasty, opts(), NOW);
 

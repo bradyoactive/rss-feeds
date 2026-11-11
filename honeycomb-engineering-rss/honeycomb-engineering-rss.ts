@@ -34,8 +34,7 @@ const DATASET = "production";
 /** Pinned: Sanity dates its API, and an unpinned version is a silent upgrade. */
 const API_VERSION = "v2021-10-21";
 /** apicdn is the cached host; the plain api. host is rate-limited harder. */
-const SANITY_URL =
-  `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
+const SANITY_URL = `https://${PROJECT}.apicdn.sanity.io/${API_VERSION}/data/query/${DATASET}`;
 /** One request. The topic has ~100 articles of the dataset's 656. */
 const PAGE_SIZE = 100;
 
@@ -145,9 +144,9 @@ export function extractPosts(payload: unknown): Post[] {
       author: str(row.author),
       image: str(row.image),
       imageType: str(row.imageType),
-      topics: (Array.isArray(row.topics) ? row.topics : []).map(str).filter(
-        Boolean,
-      ),
+      topics: (Array.isArray(row.topics) ? row.topics : [])
+        .map(str)
+        .filter(Boolean),
     });
   }
 

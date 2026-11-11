@@ -18,7 +18,8 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
   await readFile(
-    new URL("./posthog-strapi-engineering.json", import.meta.url), "utf8",
+    new URL("./posthog-strapi-engineering.json", import.meta.url),
+    "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -31,15 +32,27 @@ const feed = (query = "") =>
 test("reads every post in the tag", () => {
   assertEquals(raw.meta.pagination.total, 58, "posts Strapi reports");
   assertEquals(posts.length, 58, "posts read");
-  assert(posts.every((p) => p.path && p.title), "every post has a path/title");
+  assert(
+    posts.every((p) => p.path && p.title),
+    "every post has a path/title",
+  );
   assertEquals(
     new Set(posts.map((p) => p.path)).size,
     posts.length,
     "paths are unique",
   );
-  assert(posts.every((p) => p.ts !== null), "every post is dated");
-  assert(posts.every((p) => p.excerpt), "every post has an excerpt");
-  assert(posts.every((p) => p.image), "every post has a featured image");
+  assert(
+    posts.every((p) => p.ts !== null),
+    "every post is dated",
+  );
+  assert(
+    posts.every((p) => p.excerpt),
+    "every post has an excerpt",
+  );
+  assert(
+    posts.every((p) => p.image),
+    "every post has a featured image",
+  );
   assert(
     posts.every((p) => p.labels.includes("Engineering")),
     "nothing untagged leaks in",
@@ -68,10 +81,10 @@ test("dates posts by `date`, not by when Strapi got them", () => {
   // after it went out, and for a backfilled one it can be years later.
   const p = post("/newsletter/software-factories");
   assertEquals(p.ts, Date.parse("2026-08-11T00:00:00.000Z"), "editorial date");
-  const attributes =
-    raw.data.find((e: { attributes: { slug: string } }) =>
-      e.attributes.slug === "/newsletter/software-factories"
-    ).attributes;
+  const attributes = raw.data.find(
+    (e: { attributes: { slug: string } }) =>
+      e.attributes.slug === "/newsletter/software-factories",
+  ).attributes;
   assert(
     Date.parse(attributes.publishedAt) !== p.ts,
     "and the two genuinely differ in this capture",
@@ -109,8 +122,9 @@ test("drops a post that does not carry the tag", () => {
     },
   });
   assertEquals(
-    extractPosts({ data: [entry("Engineering"), entry("Product")] })
-      .map((p) => p.path),
+    extractPosts({ data: [entry("Engineering"), entry("Product")] }).map(
+      (p) => p.path,
+    ),
     ["/blog/Engineering"],
   );
 });
@@ -148,9 +162,13 @@ test("serves the tag", async () => {
 
 test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
-    Date.parse(m[1])
+    Date.parse(m[1]),
   );
-  assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
+  assertEquals(
+    dates,
+    [...dates].sort((a, b) => b - a),
+    "descending by date",
+  );
 });
 
 test("self-link is canonical, ignoring junk query params", async () => {
@@ -175,7 +193,10 @@ test("names the image media type rather than letting it be guessed", async () =>
   // there — better than a guessed one — even though FreshRSS then will not
   // treat it as a thumbnail.
   const unknown = posts.filter((p) => !p.imageType);
-  assertEquals(unknown.map((p) => p.path), ["/blog/testing-ai-agents"]);
+  assertEquals(
+    unknown.map((p) => p.path),
+    ["/blog/testing-ai-agents"],
+  );
   assert(
     body.includes(
       '<enclosure length="0" url="https://res.cloudinary.com/dmukukwp6/image/upload/hero_9791aaf820"/>',

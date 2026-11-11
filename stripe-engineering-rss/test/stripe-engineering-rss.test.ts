@@ -24,7 +24,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const html = await readFile(
-  new URL("./stripe-engineering.html", import.meta.url), "utf8",
+  new URL("./stripe-engineering.html", import.meta.url),
+  "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
@@ -87,10 +88,7 @@ test("reads a known post's fields accurately", () => {
 });
 
 test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
-  assertEquals(
-    parseDate("2026-10-13"),
-    Date.UTC(2026, 9, 13, 0, 0, 0),
-  );
+  assertEquals(parseDate("2026-10-13"), Date.UTC(2026, 9, 13, 0, 0, 0));
   assertEquals(
     parseDate("2026-05-25T14:30:00.000Z"),
     Date.parse("2026-05-25T14:30:00.000Z"),
@@ -101,18 +99,9 @@ test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
 });
 
 test("postUrl prepends SITE domain appropriately", () => {
-  assertEquals(
-    postUrl("test-slug"),
-    "https://stripe.dev/blog/test-slug",
-  );
-  assertEquals(
-    postUrl("/test-slug"),
-    "https://stripe.dev/blog/test-slug",
-  );
-  assertEquals(
-    postUrl("https://other.com/post"),
-    "https://other.com/post",
-  );
+  assertEquals(postUrl("test-slug"), "https://stripe.dev/blog/test-slug");
+  assertEquals(postUrl("/test-slug"), "https://stripe.dev/blog/test-slug");
+  assertEquals(postUrl("https://other.com/post"), "https://other.com/post");
 });
 
 test("orders items newest first in buildFeed", () => {
