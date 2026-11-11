@@ -1,0 +1,4237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q&As · BALKON</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&family=Oswald:wght@600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/balkon-mark-32.png?v=bdot3">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/balkon-mark-16.png?v=bdot3">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/balkon-mark-180.png?v=bdot3">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/balkon-mark-192.png?v=bdot3">
+  <link rel="stylesheet" href="/static/style.css?v=20260806c">
+  
+
+<link rel="canonical" href="https://balkon.film/qa">
+
+<link rel="manifest" href="/static/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BALKON">
+<meta name="theme-color" content="#1D2508">
+<meta name="mobile-web-app-capable" content="yes">
+
+
+<meta name="description" content="Every movie playing in NYC, one calendar - from Metrograph and Film Forum to AMC and Regal.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BALKON · FILM">
+<meta property="og:title" content="BALKON · FILM">
+<meta property="og:description" content="Every movie playing in NYC, one calendar - from Metrograph and Film Forum to AMC and Regal.">
+<meta property="og:url" content="https://balkon.film/">
+<meta property="og:image" content="https://balkon.film/static/balkon-square-1024.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="1024">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BALKON · FILM">
+<meta name="twitter:description" content="Every movie playing in NYC, one calendar - from Metrograph and Film Forum to AMC and Regal.">
+<meta name="twitter:image" content="https://balkon.film/static/balkon-square-1024.png">
+  
+
+
+<script>
+(function () {
+  try {
+    if (!/(?:^|;\s*)visitor_id=/.test(document.cookie)) {
+      var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+             : Date.now().toString(36) + Math.random().toString(36).slice(2);
+      document.cookie = "visitor_id=" + id +
+        "; path=/; max-age=" + (60 * 60 * 24 * 730) +
+        "; SameSite=Lax; Secure";
+    }
+    var ping = "/vid?p=" + encodeURIComponent(location.pathname + location.search);
+    if (document.referrer)
+      ping += "&r=" + encodeURIComponent(document.referrer);
+    
+    var sent = navigator.sendBeacon && navigator.sendBeacon(ping);
+    if (!sent) fetch(ping, {method: "POST", keepalive: true}).catch(function () {});
+
+    /* Exit beacon: when the page is left/hidden, one more ping carrying
+       d=<seconds on page> and s=<max scroll % of the scrollable distance>.
+       Closes the two blind spots of load-only beacons: dwell on the LAST
+       page of a session, and whether a "bounce" read or glanced. passive
+       scroll listener + sendBeacon-on-hidden = zero cost while the page
+       lives, fires as the visitor leaves. Re-fires if they return and
+       leave again (cumulative values) — analysis takes MAX per pageview. */
+    var t0 = Date.now(), smax = 0, lastExit = 0;
+    function depth() {
+      var doc = document.documentElement;
+      var span = doc.scrollHeight - window.innerHeight;
+      return span <= 0 ? 100
+           : Math.min(100, Math.round((window.scrollY / span) * 100));
+    }
+    window.addEventListener("scroll", function () {
+      var d = depth(); if (d > smax) smax = d;
+    }, {passive: true});
+    function sendExit() {
+      if (Date.now() - lastExit < 1000) return;   // pagehide+hidden double-fire
+      lastExit = Date.now();
+      var d = depth(); if (d > smax) smax = d;
+      var bye = "/vid?p=" + encodeURIComponent(location.pathname + location.search)
+              + "&d=" + Math.round((Date.now() - t0) / 1000) + "&s=" + smax;
+      if (navigator.sendBeacon) navigator.sendBeacon(bye);
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") sendExit();
+    });
+    window.addEventListener("pagehide", sendExit);
+
+    /* Click capture (interactive elements only, with readable labels).
+       Showtime links are target=_blank so they fire nothing on their own;
+       expanders/buttons don't navigate at all. One delegated listener
+       beacons &click=<label> for: showtime/ticket links, off-site links,
+       buttons (Apply, Save filter, bookmark ♥), and <summary> expanders
+       (+ more dates, Genre accordion...). Internal nav links are skipped —
+       they already show up as their own pageview. Element text only, no
+       PII, capped at 30 chars. */
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest && e.target.closest("a[href], button, summary, [role=button]");
+      if (!el) return;
+      var tag = el.tagName.toLowerCase();
+      var txt = (el.getAttribute("aria-label") || el.getAttribute("data-more")
+                || el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 30);
+      var label;
+      if (tag === "a") {
+        var href = el.getAttribute("href") || "";
+        if (el.classList && el.classList.contains("showtime")) {
+          label = "showtime " + txt;
+          /* which FILM: the title element sits in the same .screening-item
+             card as the pill — grab it so the click self-identifies
+             ("showtime 4:00 PM · Touki Bouki") instead of needing a
+             date+time cross-reference against gold after the fact. */
+          var it = el.closest(".screening-item");
+          var tt = it && it.querySelector(".screening-title");
+          if (tt) label += " · " + tt.textContent.replace(/\s+/g, " ").trim().slice(0, 40);
+        }
+        else if (/^https?:\/\//.test(href) && href.indexOf(location.host) < 0)
+          label = "out:" + (href.split("/")[2] || "");
+        else return;                       // internal nav → already a pageview
+      } else {
+        label = (tag === "summary" ? "expand: " : "tap: ") + txt;
+      }
+      navigator.sendBeacon("/vid?p=" + encodeURIComponent(location.pathname + location.search)
+                           + "&click=" + encodeURIComponent(label));
+    }, true);
+  } catch (e) {}
+})();
+</script>
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="$i ji init en nn Ar tn an Yi capture calculateEventProperties dn register register_once register_for_session unregister unregister_for_session gn getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync mn identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty fn hn createPersonProfile setInternalOrTestUser pn Ji opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing un debug Dr vn getPageViewId captureTraceFeedback captureTraceMetric Zi".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_nQD6AP2Vx2GYsv9vHwJ6EU6mByxqVdmA74oDbUxYW3hn', {
+        // First-party reverse proxy (nginx routes /ingest/ → PostHog). Keeps
+        // all analytics traffic same-origin so iOS Safari's tracking
+        // prevention doesn't classify the site as a tracker and evict the
+        // login cookie. ui_host keeps toolbar/links pointing at real PostHog.
+        api_host: 'https://balkon.film/ingest',
+        ui_host: 'https://us.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only',
+        // Never capture from local dev (localhost / 127.0.0.1) — keeps the
+        // analytics clean of our own testing clicks.
+        opt_out_capturing_by_default: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    });
+
+    
+</script>
+</head>
+<body>
+  
+<header>
+    <div class="container">
+      <div class="header-nav">
+        <div>
+          <h1><a href="/" style="text-decoration:none;color:inherit;"><img src="/static/balkon-masthead.png" alt="BALKON" class="balkon-mark"></a></h1>
+          <p class="subtitle">Every screen in NYC</p>
+        </div>
+        
+        <div>
+          
+            <a href="/login" class="account-icon" rel="nofollow" aria-label="Sign up or log in" title="Sign up or log in"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.75"/><path d="M5 19.5c0-3.6 3.1-5.75 7-5.75s7 2.15 7 5.75"/></svg></a>
+          
+        </div>
+        
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    
+    
+
+    <nav class="view-tabs">
+      <a href="/?city=nyc&restore=1" class="view-tab">All screenings</a>
+      <a href="/qa?city=nyc" class="view-tab active">Special events</a>
+    </nav>
+
+    
+    <div class="filter-bar">
+      <details class="filter-pop">
+        <summary class="filter-pop-btn">
+          Type <span class="filter-pop-count">1</span>
+          <span class="filter-pop-caret">▾</span>
+        </summary>
+        <div class="filter-pop-panel">
+          <a href="/qa?city=nyc&events=&date="
+             class="filter-btn ">All types</a>
+          
+          <a href="/qa?city=nyc&amp;events=in%20person,q%26a&amp;date="
+             class="filter-btn ">in person</a>
+          
+          <a href="/qa?city=nyc&amp;events=intro,q%26a&amp;date="
+             class="filter-btn ">intro</a>
+          
+          <a href="/qa?city=nyc&amp;events=live%20music,q%26a&amp;date="
+             class="filter-btn ">live music</a>
+          
+          <a href="/qa?city=nyc&amp;events=livestream%20q%26a,q%26a&amp;date="
+             class="filter-btn ">livestream Q&amp;A</a>
+          
+          <a href="/qa?city=nyc&amp;events=performance,q%26a&amp;date="
+             class="filter-btn ">performance</a>
+          
+          <a href="/qa?city=nyc&amp;events=&amp;date="
+             class="filter-btn active">Q&amp;A</a>
+          
+        </div>
+      </details>
+    </div>
+
+    
+    <div class="date-strip-wrap">
+      <a href="/qa?city=nyc&events=q%26a&date="
+         class="date-cell date-cell-pin active">
+        <span class="date-cell-day">&nbsp;</span>
+        <span class="date-cell-label">All dates</span>
+      </a>
+      <button type="button" class="date-strip-nav" aria-label="Scroll dates left" onclick="document.getElementById('qa-date-strip').scrollBy({left:-300,behavior:'smooth'})">‹</button>
+      <div class="date-strip" id="qa-date-strip" role="tablist" aria-label="Filter by date">
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-17"
+           class="date-cell ">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">17</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-18"
+           class="date-cell ">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">18</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-19"
+           class="date-cell ">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">19</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-20"
+           class="date-cell ">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">20</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-21"
+           class="date-cell ">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">21</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-22"
+           class="date-cell ">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">22</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-23"
+           class="date-cell ">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">23</span>
+        </a>
+        
+        
+        
+        <a href="/qa?city=nyc&events=q%26a&date=2026-08-24"
+           class="date-cell ">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">24</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">25</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">26</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">27</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">28</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">29</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">30</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">31</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">1</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">2</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">3</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">4</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">5</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">8</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">9</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">10</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">11</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">12</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">13</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">14</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">15</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">16</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">17</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">18</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">19</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">20</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">21</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Wed</span>
+          <span class="date-cell-label">23</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">24</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">26</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">27</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">1</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">3</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">4</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Fri</span>
+          <span class="date-cell-label">9</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">10</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">11</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Mon</span>
+          <span class="date-cell-label">12</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Tue</span>
+          <span class="date-cell-label">13</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Thu</span>
+          <span class="date-cell-label">22</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sat</span>
+          <span class="date-cell-label">24</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+        
+        <a href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow" data-gate-open
+           class="date-cell date-cell-locked" title="Create a free account to see this date">
+          <span class="date-cell-day">Sun</span>
+          <span class="date-cell-label">25</span>
+          <span class="date-cell-lock" aria-hidden="true">🔒</span>
+        </a>
+        
+        
+      </div>
+      <button type="button" class="date-strip-nav" aria-label="Scroll dates right" onclick="document.getElementById('qa-date-strip').scrollBy({left:300,behavior:'smooth'})">›</button>
+    </div>
+    
+    
+    <div class="active-filters">
+      
+      <a href="/qa?city=nyc&amp;events=&amp;date=" class="active-filter-chip" title="Remove Q&amp;A">Q&amp;A <span class="active-filter-x">×</span></a>
+      
+    </div>
+    
+    
+
+    
+    <ul class="screening-list">
+      
+      
+      
+      <li class="date-divider"><span>Mon · August 17</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/wendigo" class="screening-title">Wendigo</a>
+          
+          <span class="theater-name"><a href="/theater/film_at_lincoln_center">Film at Lincoln Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/larry-fessenden" style="color:inherit;border-bottom:1px dotted var(--rule);">Larry Fessenden</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://purchase.filmlinc.org/83576/83577" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Screening + Q&amp;A with Larry Fessenden</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/31268" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/imQGskBT7IjqHLVJDQFLR1h1UPH.jpg" alt="Larry Fessenden" loading="lazy">
+              <span class="qa-guest-card-name">Larry Fessenden</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/coyote-vs-acme" class="screening-title">Coyote vs. Acme</a>
+          
+          <span class="theater-name"><a href="/theater/momi">Museum of the Moving Image</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/dave-green" style="color:inherit;border-bottom:1px dotted var(--rule);">Dave Green</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://movingimage.org/event/coyote-vs-acme/" class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Special advance screening followed by a Q&amp;A with Will Forte and Lana Condor in person</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/62831" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/4VEzbkL3HwHTUZAPA5PyypFG2U.jpg" alt="Will Forte" loading="lazy">
+              <span class="qa-guest-card-name">Will Forte</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1452046" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/vWn27Fk2GLwH7o9fBG9hBWZI6OR.jpg" alt="Lana Condor" loading="lazy">
+              <span class="qa-guest-card-name">Lana Condor</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Tue · August 18</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/wild-inside" class="screening-title">Wild Inside</a>
+          
+          <span class="theater-name"><a href="/theater/low_cinema">Low Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/penny-lane" style="color:inherit;border-bottom:1px dotted var(--rule);">Penny Lane</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <span class="showtime sold-out">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </span>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Followed by a Q&amp;A with director Penny Lane, moderated by birder and filmmaker Harri Bailey.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1138244" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/fIEdBjHoPOWkjwTGPWpHDbcW9y8.jpg" alt="Penny Lane" loading="lazy">
+              <span class="qa-guest-card-name">Penny Lane</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/bodyhackers" class="screening-title">Bodyhackers</a>
+          
+          <span class="theater-name"><a href="/theater/film_at_lincoln_center">Film at Lincoln Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/carlos-conceicao" style="color:inherit;border-bottom:1px dotted var(--rule);">Carlos Conceição</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://purchase.filmlinc.org/83541/83542" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>9:15 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Screening + Q&amp;A with Carlos Conceição</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1283552" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/7PLcsqAlQq1kjiwpS0Fjl5TpDe0.jpg" alt="Carlos Conceição" loading="lazy">
+              <span class="qa-guest-card-name">Carlos Conceição</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Wed · August 19</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/wild-inside" class="screening-title">Wild Inside</a>
+          
+          <span class="theater-name"><a href="/theater/low_cinema">Low Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/penny-lane" style="color:inherit;border-bottom:1px dotted var(--rule);">Penny Lane</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://lowcinema.com/checkout/875dee50-3824-4992-ae18-21958e50adf4/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Followed by a Q&amp;A with director Penny Lane, moderated by birder and filmmaker Harri Bailey.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1138244" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/fIEdBjHoPOWkjwTGPWpHDbcW9y8.jpg" alt="Penny Lane" loading="lazy">
+              <span class="qa-guest-card-name">Penny Lane</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/boyhood" class="screening-title">Boyhood</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/richard-linklater" style="color:inherit;border-bottom:1px dotted var(--rule);">Richard Linklater</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+          
+            
+              
+            
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=572628~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:15 PM
+            </a>
+            
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=574032~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">intro</span>8:40 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p><b class="desc-time">6:15 PM</b>12th Anniversary special screening, followed by Q&amp;A with stars Patricia Arquette and Ethan Hawke!</p><p><b class="desc-time">8:40 PM</b>12th Anniversary special screening, extended intro by stars Patricia Arquette and Ethan Hawke!</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/4687" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/jeThSouMatiuRiLkjDvSBLHpmq0.jpg" alt="Patricia Arquette" loading="lazy">
+              <span class="qa-guest-card-name">Patricia Arquette</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/569" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/2LoTr6x0TEM7L5em4kSx1VmGDgG.jpg" alt="Ethan Hawke" loading="lazy">
+              <span class="qa-guest-card-name">Ethan Hawke</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/family-movie" class="screening-title">Family Movie</a>
+          
+          <span class="theater-name"><a href="/theater/film_at_lincoln_center">Film at Lincoln Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/kevin-bacon" style="color:inherit;border-bottom:1px dotted var(--rule);">Kevin Bacon</a>, <a href="/director/kyra-sedgwick" style="color:inherit;border-bottom:1px dotted var(--rule);">Kyra Sedgwick</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://purchase.filmlinc.org/83547/83548" class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Screening + Q&amp;A with Kevin Bacon, Kyra Sedgwick, and Travis Bacon</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/4724" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/rjX2Oz3tCZMfSwOoIAyEhdtXnTE.jpg" alt="Kevin Bacon" loading="lazy">
+              <span class="qa-guest-card-name">Kevin Bacon</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/26467" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/cfpLVZWChElvkKegZopC0xDjEWk.jpg" alt="Kyra Sedgwick" loading="lazy">
+              <span class="qa-guest-card-name">Kyra Sedgwick</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Thu · August 20</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/the-threshing" class="screening-title">The Threshing</a>
+          
+          <span class="theater-name"><a href="/theater/film_at_lincoln_center">Film at Lincoln Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/sean-mannion" style="color:inherit;border-bottom:1px dotted var(--rule);">Sean Mannion</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://purchase.filmlinc.org/83565/83568" class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Screening + Q&amp;A with Sean Mannion</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/paper-flowers" class="screening-title">Paper Flowers</a>
+          
+          <span class="theater-name"><a href="/theater/amc_empire_25">AMC Empire 25</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/mahesh-pailoor" style="color:inherit;border-bottom:1px dotted var(--rule);">Mahesh Pailoor</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-20%2B19%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=246844&amp;tid=AAORE&amp;dfam=webbrowser&amp;showtimehashcode=v2-2e1d38da10f10b29fab893baa880395a490140f9cb4979681c9bae88b5f4534d" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Paper Flowers – Special In-Person Q&amp;A</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/trees-lounge" class="screening-title">Trees Lounge</a>
+          
+          <span class="theater-name"><a href="/theater/nitehawk_prospect_park">Nitehawk Cinema - Prospect Park</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/steve-buscemi" style="color:inherit;border-bottom:1px dotted var(--rule);">Steve Buscemi</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://nitehawkcinema.com/prospectpark/purchase/23302906/" class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+            
+            
+            <a href="https://nitehawkcinema.com/prospectpark/purchase/23704415/" class="showtime sold-out" target="_blank" rel="noopener">
+              <span class="showtime-tag">intro</span>9:15 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p><b class="desc-time">7:00 PM</b>Followed by a Q&amp;A with director/star Steve Buscemi</p><p><b class="desc-time">9:15 PM</b>Introduced by director/star Steve Buscemi</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/884" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/n0pZumkrcZrAPMoPq684RhYnjPV.jpg" alt="Steve Buscemi" loading="lazy">
+              <span class="qa-guest-card-name">Steve Buscemi</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/garchaster-s-cornblade" class="screening-title">Garchaster&#39;s Cornblade</a>
+          
+          <span class="theater-name"><a href="/theater/spectacle">Spectacle Theater</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/kasper-meltedhair" style="color:inherit;border-bottom:1px dotted var(--rule);">Kasper Meltedhair</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.spectacletheater.com/garchasters-cornblade/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>in person Q&amp;A</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1885713" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/zNPDc4cAXKkyDTprHehBJZbH8vb.jpg" alt="Kasper Meltedhair" loading="lazy">
+              <span class="qa-guest-card-name">Kasper Meltedhair</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/3869" class="screening-title">54: The Director&#39;s Cut</a>
+          
+          <span class="theater-name"><a href="/theater/roxy">Roxy Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://ticketing.uswest.veezi.com/purchase/7673?siteToken=tt17e5ajy3v48kh5b2kremvnz4" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>9:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>8/20: Post-screening Q&amp;A with director Mark Christopher and editor Lee Percy</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2866" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/ehaftnjbzRhLldQdOsmmNFlLvQk.jpg" alt="Lee Percy" loading="lazy">
+              <span class="qa-guest-card-name">Lee Percy</span>
+              <span class="qa-guest-card-role">Editor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Fri · August 21</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/amc_magic_johnson_harlem_9">AMC Magic Johnson Harlem 9</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-21%2B18%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=240700&amp;tid=AAOVP&amp;dfam=webbrowser&amp;showtimehashcode=v2-363679faf5df8131042c702df3cca8b3127828dd24858606987b2a1f833d6248" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Dreams in Nightmares Q&amp;A with Director Shatara Michelle Ford</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2426640" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5tuwP8StYmYzg8XbFWcp29jFPu3.jpg" alt="Shatara Michelle Ford" loading="lazy">
+              <span class="qa-guest-card-name">Shatara Michelle Ford</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/the-room" class="screening-title">The Room</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75317/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75318/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>8:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/how-to-divorce-during-the-war" class="screening-title">How to Divorce During the War</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/andrius-blazevicius" style="color:inherit;border-bottom:1px dotted var(--rule);">Andrius Blaževicius</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=571537~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:40 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with dir. Andrius Blaževicius</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1771460" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/wDisWPj9JrF1UkPM86BuC0F9ayF.jpg" alt="Andrius Blaževičius" loading="lazy">
+              <span class="qa-guest-card-name">Andrius Blaževičius</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/never-stop-chasing" class="screening-title">Never Stop Chasing</a>
+          
+          <span class="theater-name"><a href="/theater/amc_empire_25">AMC Empire 25</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/ken-cole" style="color:inherit;border-bottom:1px dotted var(--rule);">Ken Cole</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-21%2B19%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=246676&amp;tid=AAORE&amp;dfam=webbrowser&amp;showtimehashcode=v2-0ed1edba01e5ccbf2c39387258301ec7255a0ca64430fcab170e82d9cf9881f6" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Never Stop Chasing Live Q&amp;A with Reed Timmer, Ken Cole and Kam Stocks</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1245771" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/ieSntLqu3N0rYxtrpogyazj8d3u.jpg" alt="Reed Timmer" loading="lazy">
+              <span class="qa-guest-card-name">Reed Timmer</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/learning-to-fly" class="screening-title">Learning to Fly</a>
+          
+          <span class="theater-name"><a href="/theater/angelika">Angelika Film Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/max-lowe" style="color:inherit;border-bottom:1px dotted var(--rule);">Max Lowe</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/nyc/sessions/78940/HO00008682/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Filmmaker Q&amp;As Opening Weekend with Director Max Lowe, Film Participant Aisha McAdams &amp; Producer Evan Hayes:</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/a-bright-future" class="screening-title">A Bright Future</a>
+          
+          <span class="theater-name"><a href="/theater/momi">Museum of the Moving Image</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/lucia-garibaldi" style="color:inherit;border-bottom:1px dotted var(--rule);">Lucia Garibaldi</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://altru1282.sky.blackbaud.com/1282/page.aspx?pid=196&amp;tab=2&amp;txobjid=49b28eb4-956c-4532-a998-026b822221d5" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Followed by a Q&amp;A with director Lucía Garibaldi.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2185267" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/l3YKTiXGbZDtI9GzDuAl66fS3fr.jpg" alt="Lucía Garibaldi" loading="lazy">
+              <span class="qa-guest-card-name">Lucía Garibaldi</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/lockjaw" class="screening-title">Lockjaw</a>
+          
+          <span class="theater-name"><a href="/theater/roxy">Roxy Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/sabrina-greco" style="color:inherit;border-bottom:1px dotted var(--rule);">Sabrina Greco</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://ticketing.uswest.veezi.com/purchase/7644?siteToken=tt17e5ajy3v48kh5b2kremvnz4" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Post-screening Q&amp;A with director Sabrina Greco and lead actor Blu Hunt!</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/4625087" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/1wwNmpi1EAtRiwyUYr4vWdFKkOZ.jpg" alt="Sabrina Greco" loading="lazy">
+              <span class="qa-guest-card-name">Sabrina Greco</span>
+              <span class="qa-guest-card-role">Editor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1827498" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5ilXt7HoEbaJPYZbmRYDDRXvve.jpg" alt="Blu Hunt" loading="lazy">
+              <span class="qa-guest-card-name">Blu Hunt</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/it-ends" class="screening-title">It Ends</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/alexander-ullom" style="color:inherit;border-bottom:1px dotted var(--rule);">Alexander Ullom</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=573462~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:10 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with director Alex Ullom</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/5197159" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/neVbiMVlEks9TkChp5qmhS65wiB.jpg" alt="Alexander Ullom" loading="lazy">
+              <span class="qa-guest-card-name">Alexander Ullom</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/78899/HO00008507/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:15 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Filmmaker Q&amp;As Opening Weekend with Filmmaker &amp; Cast</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/3002062" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/fLvuKhWMVeYU7raHTfpXcbVOcl1.jpg" alt="Ziwe" loading="lazy">
+              <span class="qa-guest-card-name">Ziwe</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/it-ends" class="screening-title">It Ends</a>
+          
+          <span class="theater-name"><a href="/theater/amc_19th_st_east_6">AMC 19th St. East 6</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/alexander-ullom" style="color:inherit;border-bottom:1px dotted var(--rule);">Alexander Ullom</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-21%2B20%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=246704&amp;tid=AABQG&amp;dfam=webbrowser&amp;showtimehashcode=v2-89b71d29247e5ce6f7e66f9b0f0c2c7ba342c1a434761885c4684796c7e7ec28" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>8:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with dir. Alexander Ullom</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/5197159" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/neVbiMVlEks9TkChp5qmhS65wiB.jpg" alt="Alexander Ullom" loading="lazy">
+              <span class="qa-guest-card-name">Alexander Ullom</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/big-shark" class="screening-title">Big Shark</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75319/HO00007767/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>10:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Sat · August 22</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/how-to-divorce-during-the-war" class="screening-title">How to Divorce During the War</a>
+          
+          <span class="theater-name"><a href="/theater/new_plaza_cinema">New Plaza Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+        
+        <div class="screening-meta">
+          <a href="/director/andrius-blazevicius" style="color:inherit;border-bottom:1px dotted var(--rule);">Andrius Blaževicius</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://newplazacinema.org/details/ST00001364/how-to-divorce-during-the-war/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>11:30 AM
+            </a>
+            
+          
+          
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/4207" class="screening-title">Saturday Afternoon Cartoons: Bugs We Love(?)</a>
+          
+          <span class="theater-name"><a href="/theater/metrograph">Metrograph</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/multiple-dirs" style="color:inherit;border-bottom:1px dotted var(--rule);">Multiple Dirs</a>
+          <span class="dot">·</span>
+          <span class="tag">16mm</span>
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://t.metrograph.com/Ticketing/visSelectTickets.aspx?cinemacode=9999&amp;txtSessionId=30702" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>12:15 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Featuring introduction and Q&amp;A with Stathes.</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/the-sun-never-sets" class="screening-title">The Sun Never Sets</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/joe-swanberg" style="color:inherit;border-bottom:1px dotted var(--rule);">Joe Swanberg</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=572915~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>2:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Sat, Aug 22 at 2:30pm: Sneak Preview + Q&amp;A with stars Dakota Fanning and Cory Michael Smith</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/501" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/6bNiiHnZZfA7YYIxO5FszvNFBlI.jpg" alt="Dakota Fanning" loading="lazy">
+              <span class="qa-guest-card-name">Dakota Fanning</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1367617" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/g9mXErE0CiFN8TTWaTCnurpcAeS.jpg" alt="Cory Michael Smith" loading="lazy">
+              <span class="qa-guest-card-name">Cory Michael Smith</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/learning-to-fly" class="screening-title">Learning to Fly</a>
+          
+          <span class="theater-name"><a href="/theater/angelika">Angelika Film Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/max-lowe" style="color:inherit;border-bottom:1px dotted var(--rule);">Max Lowe</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/nyc/sessions/78941/HO00008682/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>4:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Filmmaker Q&amp;As Opening Weekend with Director Max Lowe, Film Participant Aisha McAdams &amp; Producer Evan Hayes:</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/effect-of-gamma-rays-on-man-in-the-moon-marigolds" class="screening-title">The Effect of Gamma Rays on Man-in-the-Moon Marigolds</a>
+          
+          <span class="theater-name"><a href="/theater/new_plaza_cinema">New Plaza Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+        
+        <div class="screening-meta">
+          <a href="/director/paul-newman" style="color:inherit;border-bottom:1px dotted var(--rule);">Paul Newman</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://newplazacinema.org/details/ST00001374/effect-of-gamma-rays-on-man-in-the-moon-marigolds/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>4:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/amc_magic_johnson_harlem_9">AMC Magic Johnson Harlem 9</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-22%2B18%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=240700&amp;tid=AAOVP&amp;dfam=webbrowser&amp;showtimehashcode=v2-c06b1bfc76f5226c3b0a836d350a0353a87e74c762aa3f37986dc3ff173d05bb" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Dreams in Nightmares Q&amp;A with Director Shatara Michelle Ford</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2426640" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5tuwP8StYmYzg8XbFWcp29jFPu3.jpg" alt="Shatara Michelle Ford" loading="lazy">
+              <span class="qa-guest-card-name">Shatara Michelle Ford</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/the-room" class="screening-title">The Room</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75320/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75325/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>8:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/4032" class="screening-title">Blank Canvas with Akiko Higashimura Q&amp;A</a>
+          
+          <span class="theater-name"><a href="/theater/japan_society">Japan Society</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://boxoffice.japansociety.org/events/019fa436-6abd-f338-ad44-1fd6d5e46eda" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Blank Canvas: My So-Called Artist’s Journey is an autobiographical manga by
+Eisner-winner Akiko Higashimura, the creator of Princess Jellyfish and Tokyo Tarareba Girls , about her high school dream to become a comic
+book creator. Published in Japan from 2011 to 2015, it inspired a live-action
+adaptation in 2025, and Japan Society is honored now to present this film with
+original manga creator Akiko Higashimura joining us in-person for a Q&amp;A and
+signing.</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/1361" class="screening-title">NYC Short Film Showcase</a>
+          
+          <span class="theater-name"><a href="/theater/new_plaza_cinema">New Plaza Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+        
+        <div class="screening-meta">
+          
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://newplazacinema.org/details/ST00001372/nyc-short-film-showcase/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/it-ends" class="screening-title">It Ends</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/alexander-ullom" style="color:inherit;border-bottom:1px dotted var(--rule);">Alexander Ullom</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=573471~8722a542-64c1-4c0b-af02-c3e8a239d769&amp; " class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:10 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with director Alex Ullom</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/5197159" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/neVbiMVlEks9TkChp5qmhS65wiB.jpg" alt="Alexander Ullom" loading="lazy">
+              <span class="qa-guest-card-name">Alexander Ullom</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/78929/HO00008507/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:15 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Filmmaker Q&amp;As Opening Weekend with Filmmaker &amp; Cast</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2426640" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5tuwP8StYmYzg8XbFWcp29jFPu3.jpg" alt="Shatara Michelle Ford" loading="lazy">
+              <span class="qa-guest-card-name">Shatara Michelle Ford</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/it-ends" class="screening-title">It Ends</a>
+          
+          <span class="theater-name"><a href="/theater/amc_empire_25">AMC Empire 25</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/alexander-ullom" style="color:inherit;border-bottom:1px dotted var(--rule);">Alexander Ullom</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-22%2B20%3A30&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=246704&amp;tid=AAORE&amp;dfam=webbrowser&amp;showtimehashcode=v2-530e880be79359b947a19063ce80d5df48fdadc03f681ad97d08221444f5df52" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>8:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with dir. Alexander Ullom</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/lockjaw" class="screening-title">Lockjaw</a>
+          
+          <span class="theater-name"><a href="/theater/roxy">Roxy Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/sabrina-greco" style="color:inherit;border-bottom:1px dotted var(--rule);">Sabrina Greco</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://ticketing.uswest.veezi.com/purchase/7645?siteToken=tt17e5ajy3v48kh5b2kremvnz4" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>9:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Post-screening Q&amp;A with director Sabrina Greco and lead actor Blu Hunt!</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/4625087" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/1wwNmpi1EAtRiwyUYr4vWdFKkOZ.jpg" alt="Sabrina Greco" loading="lazy">
+              <span class="qa-guest-card-name">Sabrina Greco</span>
+              <span class="qa-guest-card-role">Editor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1827498" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5ilXt7HoEbaJPYZbmRYDDRXvve.jpg" alt="Blu Hunt" loading="lazy">
+              <span class="qa-guest-card-name">Blu Hunt</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/big-shark" class="screening-title">Big Shark</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75321/HO00007767/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>10:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Sun · August 23</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/78903/HO00008507/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>4:20 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Filmmaker Q&amp;As Opening Weekend with Filmmaker &amp; Cast</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2426640" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5tuwP8StYmYzg8XbFWcp29jFPu3.jpg" alt="Shatara Michelle Ford" loading="lazy">
+              <span class="qa-guest-card-name">Shatara Michelle Ford</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1136135" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/eTPXcvxlquT8ppKnwAe2a3CzI90.jpg" alt="Will Brill" loading="lazy">
+              <span class="qa-guest-card-name">Will Brill</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/it-ends" class="screening-title">It Ends</a>
+          
+          <span class="theater-name"><a href="/theater/ifc_center">IFC Center</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/alexander-ullom" style="color:inherit;border-bottom:1px dotted var(--rule);">Alexander Ullom</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.ifccenter.com/websales/pages/ticketsearchcriteria.aspx?evtinfo=573470~8722a542-64c1-4c0b-af02-c3e8a239d769&amp;" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>4:55 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Q&amp;A with director Alex Ullom</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/5197159" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/neVbiMVlEks9TkChp5qmhS65wiB.jpg" alt="Alexander Ullom" loading="lazy">
+              <span class="qa-guest-card-name">Alexander Ullom</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/dreams-in-nightmares" class="screening-title">Dreams in Nightmares</a>
+          
+          <span class="theater-name"><a href="/theater/amc_magic_johnson_harlem_9">AMC Magic Johnson Harlem 9</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/shatara-michelle-ford" style="color:inherit;border-bottom:1px dotted var(--rule);">Shatara Michelle Ford</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://tickets.fandango.com/transaction/ticketing/mobile/jump.aspx?sdate=2026-08-23%2B18%3A00&amp;from=mov_det_showtimes&amp;source=MobileWeb&amp;mid=240700&amp;tid=AAOVP&amp;dfam=webbrowser&amp;showtimehashcode=v2-805559a71a6187f989a2e202f050e1eaf2cf8f4a1aabba1ac5ad9b374ba59035" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Dreams in Nightmares Q&amp;A with Director Shatara Michelle Ford</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/2426640" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/5tuwP8StYmYzg8XbFWcp29jFPu3.jpg" alt="Shatara Michelle Ford" loading="lazy">
+              <span class="qa-guest-card-name">Shatara Michelle Ford</span>
+              <span class="qa-guest-card-role">Director</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/the-room" class="screening-title">The Room</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+          
+            
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75323/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>6:00 PM
+            </a>
+            
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75322/HO00007765/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>8:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/3869" class="screening-title">54: The Director&#39;s Cut</a>
+          
+          <span class="theater-name"><a href="/theater/roxy">Roxy Cinema</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://ticketing.uswest.veezi.com/purchase/7674?siteToken=tt17e5ajy3v48kh5b2kremvnz4" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Post-screening Q&amp;A with director Mark Christopher and producer Dolly Hall, moderated by Justin LaLiberty</p>
+        </div>
+        
+        
+        
+        
+        
+      </li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/big-shark" class="screening-title">Big Shark</a>
+          
+          <span class="theater-name"><a href="/theater/village_east">Village East by Angelika</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/tommy-wiseau" style="color:inherit;border-bottom:1px dotted var(--rule);">Tommy Wiseau</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://www.angelikafilmcenter.com/villageeast/sessions/75324/HO00007767/" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>10:00 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>LOVE IS BLIND TOUR 2026! Tommy Wiseau will be in the lobby for Meet &amp; Greet an hour before showtime. At showtime Tommy will do a Q&amp;A, followed by the movie.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/81916" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/yw5nAqkITwLEZFUKf2LDlfOnwXq.jpg" alt="Tommy Wiseau" loading="lazy">
+              <span class="qa-guest-card-name">Tommy Wiseau</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+      
+      <li class="date-divider"><span>Mon · August 24</span></li>
+      
+      
+      <li class="screening-item">
+        <div class="screening-left">
+        <div class="screening-main">
+          
+          <a href="/film/idiots" class="screening-title">Idiots</a>
+          
+          <span class="theater-name"><a href="/theater/alamo_drafthouse_downtown_brooklyn">Alamo Drafthouse - Downtown Brooklyn</a></span>
+        </div>
+
+        
+        
+        
+        
+          
+            
+              
+              
+            
+          
+        
+        <div class="screening-meta">
+          <a href="/director/macon-blair" style="color:inherit;border-bottom:1px dotted var(--rule);">Macon Blair</a>
+          
+          
+        </div>
+        
+        
+        
+        
+        
+          
+            
+              
+                
+                
+              
+            
+              
+                
+                
+              
+            
+          
+        
+        </div>
+
+        <div class="showtimes">
+          
+            
+            
+            <a href="https://drafthouse.com/nyc/ticketing/2101/135670" class="showtime " target="_blank" rel="noopener">
+              <span class="showtime-tag">Q&amp;A</span>7:30 PM
+            </a>
+            
+          
+          
+        </div>
+        
+        <div class="screening-description qa-desc-full">
+          <p>Live Q&amp;A with the cast and crew In-person Q&amp;A with actors Dave Franco and O&#39;Shea Jackson Jr. following the screening on Aug. 24th in Brooklyn.</p>
+        </div>
+        
+        
+        
+        
+        
+        <div class="screening-guests">
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/54697" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/d0I1BgNBAVvLJEDSfmyNVjYWPZE.jpg" alt="Dave Franco" loading="lazy">
+              <span class="qa-guest-card-name">Dave Franco</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+            
+            <a class="qa-guest-card" href="https://www.themoviedb.org/person/1371398" target="_blank" rel="noopener">
+              <img src="https://image.tmdb.org/t/p/w185/kXJ02sXvnExbGNJ11piC6d6WMOc.jpg" alt="O&#39;Shea Jackson Jr." loading="lazy">
+              <span class="qa-guest-card-name">O&#39;Shea Jackson Jr.</span>
+              <span class="qa-guest-card-role">Actor</span>
+            </a>
+          
+        </div>
+        
+      </li>
+      
+    </ul>
+    
+
+    
+    <div class="gate-end">
+      <p>You're seeing the next 7 days.</p>
+      <button type="button" class="gate-btn" data-gate-open>See all special events</button>
+    </div>
+
+    <div class="gate-overlay" id="gate-overlay" hidden>
+      <div class="gate-modal" role="dialog" aria-modal="true" aria-labelledby="gate-modal-title">
+        <button type="button" class="gate-close" data-gate-close aria-label="Close">&times;</button>
+        <h2 class="gate-title" id="gate-modal-title">More special events ahead</h2>
+        <p class="gate-sub">Create a free account to unlock every upcoming screening, special events, and your own watchlist.</p>
+        <div class="gate-actions">
+          <a class="gate-btn" href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow">Create a free account</a>
+          <a class="gate-link" href="/login?next=/qa%3Fcity%3Dnyc%26events%3Dq%2526a%26date%3D" rel="nofollow">Log in</a>
+        </div>
+      </div>
+    </div>
+    
+
+  </main>
+
+  <script>
+    document.querySelectorAll('.bookmark-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const res = await fetch('/watchlist/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            theater_id: btn.dataset.theaterId,
+            date: btn.dataset.date,
+            title: btn.dataset.title,
+            director: btn.dataset.director,
+            theater_name: btn.dataset.theaterName,
+            url: btn.dataset.url,
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          btn.classList.toggle('saved', data.saved);
+          btn.innerHTML = data.saved ? '&#9829;' : '&#9825;';
+        }
+      });
+    });
+
+    // Keep the selected date centered in the strip on reload.
+    (function () {
+      const strip = document.getElementById('qa-date-strip');
+      if (!strip) return;
+      const active = strip.querySelector('.date-cell.active');
+      if (!active) return;
+      const target = active.offsetLeft - (strip.clientWidth / 2) + (active.clientWidth / 2);
+      strip.scrollTo({ left: Math.max(0, target), behavior: 'auto' });
+    })();
+
+    // Signup-gate modal: locked dates + the end-of-list nudge open a
+    // centered overlay. No-JS fallback: locked dates are real /login links.
+    (function () {
+      const overlay = document.getElementById('gate-overlay');
+      if (!overlay) return;
+      const openGate = (e) => { if (e) e.preventDefault(); overlay.hidden = false; document.body.style.overflow = 'hidden'; };
+      const closeGate = () => { overlay.hidden = true; document.body.style.overflow = ''; };
+      document.querySelectorAll('[data-gate-open]').forEach(el => el.addEventListener('click', openGate));
+      overlay.querySelectorAll('[data-gate-close]').forEach(el => el.addEventListener('click', closeGate));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeGate(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !overlay.hidden) closeGate(); });
+    })();
+  </script>
+
+  
+<script>
+(function () {
+  const header = document.querySelector('header');
+  function setH() {
+    if (header) document.documentElement.style.setProperty('--header-h', (header.offsetHeight - 1) + 'px');
+  }
+  setH();
+  window.addEventListener('resize', setH);
+  window.addEventListener('load', setH);  // after the masthead image loads (it expands header height)
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(setH);
+  // Keep --header-h in sync with the ACTUAL header height for any reason it changes:
+  // async image load, font swap, and the scroll-shrink padding transition.
+  if (header && window.ResizeObserver) new ResizeObserver(setH).observe(header);
+})();
+(function () {
+  const mq = window.matchMedia('(max-width: 640px)');
+  // Natural one-line width: clone off-screen with nowrap so the measure isn't
+  // constrained by — or fooled by (single unbreakable word) — the current column.
+  function naturalWidth(el) {
+    const c = el.cloneNode(true);
+    c.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;width:auto;max-width:none;left:-9999px;top:0;';
+    document.body.appendChild(c);
+    const w = c.getBoundingClientRect().width;
+    c.remove();
+    return w;
+  }
+  function fit(item) {
+    const title = item.querySelector('.screening-title');
+    const times = item.querySelector('.showtimes');
+    if (!title || !times) return;
+    if (!mq.matches) { item.classList.remove('has-many'); return; }  // desktop: inline grid
+    const need = naturalWidth(title) + naturalWidth(times) + 28;  // + gap
+    item.classList.toggle('has-many', need > item.clientWidth);
+  }
+  function run(scope) { (scope || document).querySelectorAll('.screening-item').forEach(fit); }
+  run();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => run());
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(run, 150); });
+  // Re-fit lazy-loaded rows as they stream in — both the main list and the
+  // "+N more dates" fold, whose cards arrive later and would otherwise never
+  // be measured on mobile.
+  ['screening-list', 'folded-list'].forEach((id) => {
+    const list = document.getElementById(id);
+    if (!list) return;
+    new MutationObserver((muts) => {
+      muts.forEach((m) => m.addedNodes.forEach((n) => {
+        if (n.nodeType === 1 && n.classList && n.classList.contains('screening-item')) fit(n);
+      }));
+    }).observe(list, { childList: true });
+  });
+})();
+(function () {
+  // "+ N more dates" — the free-week fold on film + director pages.
+  //
+  // The folded dates are NOT in the page; the button fetches them the first time
+  // it's pressed and caches them in the DOM after that. Keeping them out of the
+  // initial HTML is the entire reason the fold exists (a wide release like The
+  // Odyssey folds 2,272 of its 3,720 showtimes).
+  document.querySelectorAll('.more-dates-btn').forEach((btn) => {
+    const list = document.getElementById(btn.dataset.target);
+    if (!list || !btn.dataset.url) return;
+    btn.dataset.label = btn.textContent;
+    let loaded = false;
+    btn.addEventListener('click', async () => {
+      if (!loaded) {
+        btn.disabled = true;
+        btn.textContent = 'loading…';
+        try {
+          const r = await fetch(btn.dataset.url);
+          if (!r.ok) throw new Error(r.status);
+          list.innerHTML = await r.text();
+          loaded = true;
+        } catch (e) {
+          btn.textContent = btn.dataset.label;   // leave it clickable; try again
+          btn.disabled = false;
+          return;
+        }
+        btn.disabled = false;
+      }
+      const opening = list.hasAttribute('hidden');
+      list.toggleAttribute('hidden', !opening);
+      btn.textContent = opening ? 'show fewer dates' : btn.dataset.label;
+    });
+  });
+})();
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2c6516acbfae226',t:'MTc4Njk0NDk1NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

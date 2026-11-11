@@ -1,0 +1,56 @@
+/**
+ * Live link check for the Stripe feed. See ../../common/linkcheck.ts.
+ *
+ *   deno test --allow-read --allow-net test/stripe-engineering-rss.linkcheck.test.ts
+ */
+
+import { buildFeed, extractPosts, postUrl } from "../stripe-engineering-rss.ts";
+import {
+  assertAllServed,
+  channelLink,
+  fixture,
+  liveTest,
+  sampleOf,
+} from "../../common/linkcheck.ts";
+
+const posts = extractPosts(
+  await fixture(import.meta, "stripe-engineering.html"),
+);
+
+liveTest("a sample of post links resolve", async () => {
+  const urls = sampleOf(posts.map((p) => postUrl(p.slug)));
+  await assertAllServed(urls, "stripe post links");
+});
+
+liveTest("the engineering topic page the channel links to exists", async () => {
+  const res = buildFeed(
+    posts,
+    new URL("https://feed.val.run/stripe"),
+  );
+  await assertAllServed(
+    [channelLink(await res.text())],
+    "stripe engineering topic page",
+  );
+});
+
+liveTest(
+  "the live engineering topic page still server-renders Next.js posts",
+  async () => {
+    const res = await fetch(
+      "https://stripe.dev/blog/topic/engineering",
+      {
+        headers: {
+          "user-agent": "stripe-rss-bridge (+https://val.town)",
+          accept: "text/html,application/xhtml+xml",
+        },
+      },
+    );
+    if (!res.ok) throw new Error(`topic page: HTTP ${res.status}`);
+    const html = await res.text();
+    const live = extractPosts(html);
+    if (!live.length) throw new Error("live page yielded no posts");
+    if (live.some((p) => p.ts === null)) {
+      throw new Error("a live post carried an unparseable publication date");
+    }
+  },
+);
