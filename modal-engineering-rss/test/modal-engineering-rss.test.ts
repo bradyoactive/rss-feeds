@@ -188,6 +188,34 @@ Deno.test("leaves an unpublished post out", () => {
   assertEquals(extractPosts(record(false)).length, 0, "unpublished");
 });
 
+Deno.test("resolves a site-relative image against modal.com", async () => {
+  const payload = {
+    nodes: [{
+      type: "data",
+      data: [
+        { posts: 1 },
+        [2],
+        { slug: 3, title: 4, category: 5, date: 6, image: 7 },
+        "s",
+        "T",
+        "Engineering",
+        "2026-01-01",
+        "/assets/blog/nvidia-vera.webp",
+      ],
+    }],
+  };
+  const posts = extractPosts(payload);
+  assertEquals(
+    posts[0].image,
+    "https://modal.com/assets/blog/nvidia-vera.webp",
+    "absolute image URL",
+  );
+  // A relative URL used to make the feed library throw and the feed 500.
+  const res = buildFeed(posts, new URL("https://feed.val.run/modal"));
+  assertEquals(res.status, 200, "feed renders");
+  assert((await res.text()).includes("nvidia-vera.webp"), "enclosure kept");
+});
+
 Deno.test("survives input that is not the payload we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({}).length, 0, "no nodes");

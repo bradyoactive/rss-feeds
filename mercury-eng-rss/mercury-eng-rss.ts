@@ -7,11 +7,10 @@
  * topic, newest first.
  *
  * Mercury publishes no feed of its own (/blog/rss.xml, /blog/feed and friends
- * all 404). The search page is Next.js App Router: post records ride in the
- * flight chunks as real JSON, so fields are JSON.parsed rather than matched.
+ * all 404). The search page server-renders one HTML card per post: topic,
+ * title and authors.
  *
- * The catch is that the search listing carries no publication date — its
- * `image` and `subheading` are unresolved flight refs (`$L41`) too. Dates,
+ * The catch is that the listing carries no publication date. Dates,
  * descriptions and cover images come from each post page's JSON-LD BlogPosting,
  * so a cold request costs one listing fetch plus one fetch per post, six at a
  * time. Authors come from the listing, which covers every post; the JSON-LD
@@ -134,41 +133,62 @@ async function mapLimit<T, R>(
 
 /** Listing records look like `{"topic":{"slug":…,"name":…},"slug":…,"title":…}`. */
 export function extractIndex(html: string, topic: string): Stub[] {
-  const payload = flightPayload(html);
   const wanted = slugify(topic);
   const bySlug = new Map<string, Stub>();
 
-  for (const match of payload.matchAll(/\{"topic":\{/g)) {
-    const body = sliceJson(payload, match.index!);
-    if (!body) continue;
+  // Each card is a topic link, then a title link wrapping a heading, then its
+  // author links. The card's image and the click overlay are also
+  // blog-article links to the same post, but carry no heading.
+  const titles = [
+    ...html.matchAll(
+      /<a\b[^>]*data-analytics-event-name="blog-article"[^>]*href="\/blog\/([a-z0-9-]+)"[^>]*>([\s\S]*?)<\/a>/g,
+    ),
+  ].filter((m) => /<h[1-6]\b/.test(m[2]));
 
-    let raw: Record<string, unknown>;
-    try {
-      raw = JSON.parse(body);
-    } catch {
-      continue; // a record split across a chunk boundary we failed to rejoin
-    }
+  titles.forEach((m, i) => {
+    const slug = m[1];
+    const title = decodeEntities(stripTags(m[2])).trim();
+    if (!slug || !title || bySlug.has(slug)) return;
 
-    const slug = str(raw.slug);
-    const title = str(raw.title);
-    if (!slug || !title || bySlug.has(slug)) continue;
+    // The topic link sits just before this card's title, after the previous one.
+    const before = html.slice(i ? titles[i - 1].index! : 0, m.index!);
+    const topics = [
+      ...before.matchAll(
+        /href="\/blog\/topics\/([a-z0-9-]+)"[^>]*>([\s\S]*?)<\/a>/g,
+      ),
+    ];
+    const topicMatch = topics.at(-1);
+    const topicSlug = topicMatch?.[1] ?? "";
+    const name = decodeEntities(stripTags(topicMatch?.[2] ?? "")).trim();
+    // Match by display name or slug, so "Eng Blog", "eng+blog" and
+    // "engineering-blog" all address the same feed.
+    if (slugify(name) !== wanted && topicSlug !== wanted) return;
 
-    const topicObj = raw.topic as Record<string, unknown> | undefined;
-    const name = str(topicObj?.name);
-    // The listing is server-filtered, but match anyway: by display name or slug,
-    // so "Eng Blog", "eng+blog" and "engineering-blog" all address the same feed.
-    if (slugify(name) !== wanted && str(topicObj?.slug) !== wanted) continue;
+    const after = html.slice(
+      m.index! + m[0].length,
+      i + 1 < titles.length ? titles[i + 1].index! : undefined,
+    );
+    const authors = [
+      ...after.matchAll(
+        /data-analytics-event-name="blog-author"[^>]*>([\s\S]*?)<\/a>/g,
+      ),
+    ].map((a) => decodeEntities(stripTags(a[1])).trim()).filter(Boolean);
 
     bySlug.set(slug, {
       slug,
       title,
-      author: names(raw.authors),
+      author: authors.join(" & "),
       topic: name,
-      categories: list(raw.categories),
+      // Cards no longer show Mercury's own categories.
+      categories: [],
     });
-  }
+  });
 
   return [...bySlug.values()];
+}
+
+function stripTags(s: string): string {
+  return s.replace(/<[^>]*>/g, "");
 }
 
 async function fetchDetail(slug: string) {
@@ -231,44 +251,6 @@ async function get(url: string): Promise<string> {
   return res.text();
 }
 
-/** Concatenates the streamed flight chunks back into one payload string. */
-function flightPayload(html: string): string {
-  let payload = "";
-  for (
-    const chunk of html.matchAll(
-      /self\.__next_f\.push\(\[\d+,\s*("(?:[^"\\]|\\.)*")/g,
-    )
-  ) {
-    try {
-      payload += JSON.parse(chunk[1]);
-    } catch {
-      // a chunk that isn't a plain string literal contributes nothing
-    }
-  }
-  return payload;
-}
-
-/** Returns the JSON object literal starting at `open` ("{"), string-aware. */
-function sliceJson(src: string, open: number): string | null {
-  let depth = 0;
-  let inString = false;
-
-  for (let i = open; i < src.length; i++) {
-    const c = src[i];
-    if (inString) {
-      if (c === "\\") i++;
-      else if (c === '"') inString = false;
-      continue;
-    }
-    if (c === '"') inString = true;
-    else if (c === "{") depth++;
-    else if (c === "}") {
-      if (--depth === 0) return src.slice(open, i + 1);
-    }
-  }
-  return null;
-}
-
 export function renderRss(feed: {
   title: string;
   description: string;
@@ -317,16 +299,6 @@ function searchUrl(topic: string): string {
 /** Matches Mercury's own `?topics=Eng+Blog` spelling. */
 function plusEncode(s: string): string {
   return encodeURIComponent(s).replace(/%20/g, "+");
-}
-
-function names(v: unknown): string {
-  return list(v).join(" & ");
-}
-
-function list(v: unknown): string[] {
-  return Array.isArray(v)
-    ? v.map((x) => str((x as Record<string, unknown>)?.name)).filter(Boolean)
-    : [];
 }
 
 function str(v: unknown): string {

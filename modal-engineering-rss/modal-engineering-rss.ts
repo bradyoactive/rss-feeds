@@ -112,7 +112,9 @@ export function extractPosts(payload: unknown): Post[] {
     // business in a feed.
     if (row.published === false) continue;
 
-    const image = str(row.image);
+    // Nearly every image is an absolute modal-cdn.com URL, but some are
+    // site-relative ("/assets/blog/…"), which the feed library rejects.
+    const image = str(row.image) && new URL(str(row.image), SITE).toString();
     // Dates come in two shapes from the same list: date-only "2026-08-04" and
     // a Z-suffixed instant. Date.parse reads both as UTC.
     const ts = Date.parse(str(row.date));

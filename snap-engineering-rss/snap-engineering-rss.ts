@@ -9,9 +9,9 @@
  *
  * Snap publishes no feed of its own (/rss.xml and /feed.xml redirect to /404).
  *
- * The blog is a React client using Apollo Client and Contentful. All blog
- * articles, titles, publication dates, summaries, and Contentful media
- * assets are present in the `window.APOLLO_STATE` payload on the blog page.
+ * The blog is a React client backed by Contentful. The blog page embeds the
+ * results of its Contentful queries as `window.CONTENTFUL_RESULTS`, which
+ * carries every listed post's title, summary, date and image.
  */
 
 import { Feed, type Item } from "feed";
@@ -82,30 +82,32 @@ async function fetchPage(): Promise<string> {
 }
 
 /**
- * Extracts post records from `window.APOLLO_STATE` in the page HTML.
+ * Extracts post records from `window.CONTENTFUL_RESULTS` in the page HTML.
+ *
+ * That object maps each Contentful query the page ran to its result, with
+ * entries nested in place rather than normalized: gallery `Tile`s (title,
+ * summary, date, image) and the featured `CarouselCard`s (title and image, but
+ * no date), each pointing at its post through `slugReference.slug`.
  */
 export function extractPosts(html: string): Post[] {
-  const match = html.match(/window\.APOLLO_STATE\s*=\s*(\{[\s\S]*?\});/);
-  if (!match) {
-    throw new Error("Could not find window.APOLLO_STATE in page HTML");
+  const marker = /window\.CONTENTFUL_RESULTS\s*=\s*/.exec(html);
+  const json = marker ? sliceJson(html, marker.index + marker[0].length) : null;
+  if (!json) {
+    throw new Error("Could not find window.CONTENTFUL_RESULTS in page HTML");
   }
 
-  let data: Record<string, unknown>;
+  let data: unknown;
   try {
-    data = JSON.parse(match[1]);
+    data = JSON.parse(json);
   } catch (err) {
-    throw new Error(`Failed to parse APOLLO_STATE JSON: ${err}`);
+    throw new Error(`Failed to parse CONTENTFUL_RESULTS JSON: ${err}`);
   }
 
   const bySlug = new Map<string, Post>();
 
-  for (const [_key, rawVal] of Object.entries(data)) {
-    const val = obj(rawVal);
-    if (!val || !val.slugReference) continue;
-
-    const slugRef = str(obj(val.slugReference)?.__ref);
-    const slugObj = obj(data[slugRef]);
-    const slug = str(slugObj?.slug).trim();
+  for (const val of entries(data)) {
+    if (!val.slugReference) continue;
+    const slug = str(obj(val.slugReference)?.slug).trim();
     if (!slug || bySlug.has(slug)) continue;
 
     const typename = str(val.__typename);
@@ -123,20 +125,12 @@ export function extractPosts(html: string): Post[] {
     const description = extractRichText(obj(obj(val.label)?.json));
 
     // Date
-    const rawDate = str(val.date) ||
-      str(obj(data[str(obj(val.sys)?.__ref)])?.publishedAt);
-    const ts = parseDate(rawDate);
+    const ts = parseDate(str(val.date) || str(obj(val.sys)?.publishedAt));
 
     // Image
-    let image = "";
-    let imageType = "";
-    const mediaRef = str(obj(val.media)?.__ref);
-    if (mediaRef && data[mediaRef]) {
-      const imgEntity = obj(data[mediaRef]);
-      const asset = obj(imgEntity?.media);
-      image = str(asset?.url).trim();
-      imageType = str(asset?.contentType).trim();
-    }
+    const asset = obj(obj(val.media)?.media);
+    let image = str(asset?.url).trim();
+    let imageType = str(asset?.contentType).trim();
     if (image.startsWith("//")) image = `https:${image}`;
     if (image && !imageType) imageType = mediaType(image);
 
@@ -160,6 +154,35 @@ export function extractPosts(html: string): Post[] {
   }
 
   return [...bySlug.values()];
+}
+
+/** Every object in `v`, depth-first, in document order. */
+function* entries(v: unknown): Generator<Record<string, unknown>> {
+  if (Array.isArray(v)) {
+    for (const x of v) yield* entries(x);
+  } else if (typeof v === "object" && v !== null) {
+    yield v as Record<string, unknown>;
+    for (const x of Object.values(v)) yield* entries(x);
+  }
+}
+
+/** The JSON object literal starting at `open` ("{"), string-aware. */
+function sliceJson(src: string, open: number): string | null {
+  if (src[open] !== "{") return null;
+  let depth = 0;
+  let inString = false;
+  for (let i = open; i < src.length; i++) {
+    const c = src[i];
+    if (inString) {
+      if (c === "\\") i++;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) return src.slice(open, i + 1);
+  }
+  return null;
 }
 
 function extractRichText(doc: Record<string, unknown> | null): string {

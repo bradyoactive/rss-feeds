@@ -13,7 +13,7 @@
 import {
   buildFeed,
   clean,
-  extractDates,
+  extractPayload,
   extractPosts,
   parseDate,
   type Post,
@@ -29,7 +29,7 @@ const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
 Deno.test("extracts all posts from the fixture", () => {
-  assertEquals(posts.length, 26, "post count");
+  assertEquals(posts.length, 24, "post count");
   assert(
     posts.every((p) => p.title && p.slug),
     "every post has a title and slug",
@@ -53,17 +53,17 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("extractDates recovers dates for featured and standard posts", () => {
-  const dates = extractDates(html);
+Deno.test("extractPayload recovers dates and summaries from the RSC stream", () => {
+  const payload = extractPayload(html);
   assertEquals(
-    dates.get("redesigning-source-control"),
+    payload.get("redesigning-source-control")?.date,
     "2026-10-13",
-    "featured article date from RSC stream",
+    "date from RSC stream",
   );
   assertEquals(
-    dates.get("how-we-contain-claude"),
-    "2026-05-25",
-    "standard article date from RSC stream",
+    payload.get("components-of-agent-memory")?.summary,
+    "For Claude to learn from experience, it has to decide what’s worth remembering before it knows what’s next. Here’s how “dreaming” helps it organize memory and correct mistakes.",
+    "summary unescaped from RSC stream",
   );
 });
 
@@ -85,21 +85,24 @@ Deno.test("reads a known post's fields accurately", () => {
   assertEquals(p.categories, ["Engineering", "AI"], "categories");
   assertEquals(
     postUrl(p.slug),
-    "https://www.anthropic.com/engineering/redesigning-source-control",
+    "https://www.anthropic.com/research/redesigning-source-control",
     "post URL",
   );
 });
 
-Deno.test("handles image media types properly including SVG", () => {
+Deno.test("takes the image media type from the CDN's fm param", () => {
   const p = bySlug("redesigning-source-control")!;
-  assert(p.image, "featured post has image");
-  assertEquals(p.imageType, "image/svg+xml", "svg media type");
+  assert(p.image.startsWith("https://assets.claude.com/"), "card image");
+  assert(!p.image.includes("&amp;"), "entities in src decoded");
+  assertEquals(p.imageType, "image/webp", "fm=webp wins over .jpg");
 });
 
 Deno.test("decodes html entities in titles", () => {
-  const p = bySlug("claude-think-tool")!;
-  assert(p, "think tool post exists");
-  assert(p.title.includes('"think" tool'), "quotes decoded");
+  const [p] = extractPosts(
+    '<article><time>Mar 20, 2025</time><h3><a href="/research/claude-think-tool">The &quot;think&quot; tool</a></h3></article>',
+  );
+  assertEquals(p.title, 'The "think" tool', "quotes decoded");
+  assertEquals(p.ts, Date.UTC(2025, 2, 20), "printed date read as UTC");
 });
 
 Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
@@ -111,6 +114,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
     parseDate("2026-05-25T14:30:00.000Z"),
     Date.parse("2026-05-25T14:30:00.000Z"),
   );
+  assertEquals(parseDate("Oct 13, 2026"), Date.UTC(2026, 9, 13));
   assertEquals(parseDate("not a date"), null);
   assertEquals(parseDate(""), null);
   assertEquals(parseDate(null), null);
@@ -119,11 +123,11 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
 Deno.test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("test-slug"),
-    "https://www.anthropic.com/engineering/test-slug",
+    "https://www.anthropic.com/research/test-slug",
   );
   assertEquals(
     postUrl("/test-slug"),
-    "https://www.anthropic.com/engineering/test-slug",
+    "https://www.anthropic.com/research/test-slug",
   );
   assertEquals(
     postUrl("https://other.com/post"),
@@ -166,13 +170,13 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   assert(xml.includes("<title><![CDATA[Test Slug]]></title>"), "item title");
   assert(
     xml.includes(
-      "<link>https://www.anthropic.com/engineering/test-slug</link>",
+      "<link>https://www.anthropic.com/research/test-slug</link>",
     ),
     "item link",
   );
   assert(
     xml.includes(
-      '<guid isPermaLink="true">https://www.anthropic.com/engineering/test-slug</guid>',
+      '<guid isPermaLink="true">https://www.anthropic.com/research/test-slug</guid>',
     ),
     "permalink guid",
   );

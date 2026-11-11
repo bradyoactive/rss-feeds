@@ -166,12 +166,12 @@ Deno.test("clean strips control characters that break XML 1.0", () => {
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if APOLLO_STATE is missing", () => {
+Deno.test("throws error if CONTENTFUL_RESULTS is missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No apollo state here</body></html>");
   } catch {
     threw = true;
   }
-  assert(threw, "should throw on missing APOLLO_STATE");
+  assert(threw, "should throw on missing CONTENTFUL_RESULTS");
 });

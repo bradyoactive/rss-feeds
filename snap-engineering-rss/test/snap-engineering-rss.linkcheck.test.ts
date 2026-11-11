@@ -39,7 +39,7 @@ liveTest("the engineering blog the channel links to exists", async () => {
 });
 
 liveTest(
-  "the live engineering blog still renders APOLLO_STATE",
+  "the live engineering blog still renders CONTENTFUL_RESULTS",
   async () => {
     const res = await fetch(
       "https://eng.snap.com/blog",

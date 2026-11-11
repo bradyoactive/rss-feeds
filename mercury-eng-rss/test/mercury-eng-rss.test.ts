@@ -27,9 +27,9 @@ const postHtml = await Deno.readTextFile(
 const stubs = extractIndex(searchHtml, "Eng Blog");
 
 Deno.test("extracts every Eng Blog post from the listing", () => {
-  // The listing shows all 8; ?page=2 and /blog/topics/engineering-blog return
-  // the same set, so there is no pagination to follow.
-  assertEquals(stubs.length, 8, "post count");
+  // The listing shows all 9; /blog/topics/engineering-blog returns the same
+  // set, so there is no pagination to follow.
+  assertEquals(stubs.length, 9, "post count");
   assert(
     stubs.every((s) => s.slug && s.title),
     "every stub has a slug and title",
@@ -47,21 +47,22 @@ Deno.test("takes authors from the listing, which covers every post", () => {
   assert(stubs.every((s) => s.author), "every stub has an author");
   const ghci = stubs.find((s) => s.slug === "announcing-ghciwatch");
   assertEquals(ghci?.author, "Rebecca Turner", "author");
-  assertEquals(ghci?.categories, ["Inside Mercury"], "categories");
+  assertEquals(ghci?.title, "Announcing ghciwatch 1.0", "title");
+  assertEquals(ghci?.categories, [], "cards carry no categories");
 });
 
 Deno.test("matches a topic by display name, slug, or plus-form", () => {
   for (const spelling of ["Eng Blog", "eng blog", "eng-blog"]) {
     assertEquals(
       extractIndex(searchHtml, spelling).length,
-      8,
+      9,
       `topic “${spelling}”`,
     );
   }
   // The topic's own slug differs from its name's slug; both must resolve.
   assertEquals(
     extractIndex(searchHtml, "engineering-blog").length,
-    8,
+    9,
     "topic slug",
   );
   assertEquals(
@@ -98,17 +99,34 @@ Deno.test("survives a post page with no usable metadata", () => {
   );
 });
 
-Deno.test("survives records split across flight chunk boundaries", () => {
-  const marker = '{\\"topic\\":{';
-  const first = searchHtml.indexOf(marker);
-  assert(first > -1, "fixture still uses escaped flight chunks");
-  const cut = first + marker.length + 8;
-  const split = searchHtml.slice(0, cut) + '");self.__next_f.push([1,"' +
-    searchHtml.slice(cut);
+Deno.test("reads a card's topic, title and authors only from that card", () => {
+  const card = (slug: string, topic: string, author: string) =>
+    `<a href="/blog/topics/${topic}"><span>${topic}</span></a>` +
+    `<a data-analytics-event-name="blog-article" href="/blog/${slug}"><span><h2>${slug} &amp; co</h2></span></a>` +
+    `<a data-analytics-event-name="blog-author" href="/blog/authors/x"><span>${author}</span></a>` +
+    `<a data-analytics-event-name="blog-article" aria-hidden="true" href="/blog/${slug}"></a>`;
+  const html = card("a", "engineering-blog", "Ann") +
+    card("b", "personal-finance", "Bob") +
+    card("c", "engineering-blog", "Cy");
   assertEquals(
-    extractIndex(split, "Eng Blog").length,
-    stubs.length,
-    "same post count",
+    extractIndex(html, "engineering-blog"),
+    [
+      {
+        slug: "a",
+        title: "a & co",
+        author: "Ann",
+        topic: "engineering-blog",
+        categories: [],
+      },
+      {
+        slug: "c",
+        title: "c & co",
+        author: "Cy",
+        topic: "engineering-blog",
+        categories: [],
+      },
+    ],
+    "stubs",
   );
 });
 
@@ -130,7 +148,7 @@ const itemCount = (xml: string) => (xml.match(/<item>/g) ?? []).length;
 Deno.test("serves the feed", async () => {
   const { status, body } = await feed("");
   assertEquals(status, 200, "status");
-  assertEquals(itemCount(body), 8, "all posts");
+  assertEquals(itemCount(body), 9, "all posts");
   assert(
     body.includes("<title>Mercury Blog — Eng Blog</title>"),
     "channel title",
@@ -148,10 +166,6 @@ Deno.test("serves the feed", async () => {
     "item guid",
   );
   assert(body.includes("<category>Eng Blog</category>"), "topic as a category");
-  assert(
-    body.includes("<category>Inside Mercury</category>"),
-    "Mercury's own category too",
-  );
 });
 
 Deno.test("orders items newest first", async () => {
@@ -168,7 +182,7 @@ Deno.test("self-link is canonical, ignoring junk query params", async () => {
     body.includes('href="https://feed.val.run/mercury" rel="self"'),
     "bare self-link",
   );
-  assertEquals(itemCount(body), 8, "params ignored");
+  assertEquals(itemCount(body), 9, "params ignored");
 });
 
 const SITE_LINK = "https://mercury.com/blog/search?topics=Eng+Blog";

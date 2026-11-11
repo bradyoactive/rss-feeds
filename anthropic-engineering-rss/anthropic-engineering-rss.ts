@@ -11,8 +11,9 @@
  * /rss.xml, and /feed.xml return 404).
  *
  * The site is a Next.js App Router front end backed by Sanity CMS. The
- * engineering portal renders all posts into clean HTML article cards and
- * carries the exact publication dates in the RSC payload and `<time>` tags.
+ * engineering portal renders each post as an HTML article card with its title,
+ * image and printed date; summaries and ISO dates sit in the RSC payload.
+ * Posts themselves live under /research/<slug>.
  */
 
 import { Feed, type Item } from "feed";
@@ -84,15 +85,16 @@ async function fetchPage(): Promise<string> {
 
 /**
  * Extracts post records from the engineering portal HTML.
+ *
+ * Each post is an `<article>` card linking to `/research/<slug>` (posts moved
+ * there from `/engineering/<slug>`, which now 308-redirects) with its title in
+ * a heading and its date printed in a `<time>`, e.g. "Oct 13, 2026". Cards no
+ * longer carry a summary, so that comes from the RSC payload instead.
  */
 export function extractPosts(html: string): Post[] {
-  // Map slugs to publication dates from embedded Sanity/RSC payload
-  const datesBySlug = extractDates(html);
+  const payload = extractPayload(html);
 
-  // Extract article elements
-  const articleMatches = html.match(
-    /<article\s+class="[^"]*ArticleList[^"]*"[\s\S]*?<\/article>/g,
-  );
+  const articleMatches = html.match(/<article\b[^>]*>[\s\S]*?<\/article>/g);
   if (!articleMatches || articleMatches.length === 0) {
     throw new Error(
       "Could not find article cards in Anthropic engineering page",
@@ -102,33 +104,30 @@ export function extractPosts(html: string): Post[] {
   const bySlug = new Map<string, Post>();
 
   for (const articleHtml of articleMatches) {
-    const linkMatch = articleHtml.match(/href="\/engineering\/([^"?#]+)"/);
+    const linkMatch = articleHtml.match(
+      /href="\/(?:engineering|research)\/([^"?#\/]+)"/,
+    );
     if (!linkMatch) continue;
     const slug = linkMatch[1].trim();
     if (!slug || bySlug.has(slug)) continue;
 
-    // Title
     const titleMatch = articleHtml.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/);
     const rawTitle = titleMatch ? titleMatch[1] : slug;
     const title = decodeHtmlEntities(stripHtml(rawTitle)).trim();
 
-    // Summary
-    const summaryMatch = articleHtml.match(
-      /<p\s+class="[^"]*summary[^"]*"[^>]*>([\s\S]*?)<\/p>/,
-    );
-    const description = summaryMatch
-      ? decodeHtmlEntities(stripHtml(summaryMatch[1])).trim()
-      : "";
+    const meta = payload.get(slug);
+    const description = meta?.summary ?? "";
 
-    // Image
-    const imgMatch = articleHtml.match(/<img[^>]*src="([^"]+)"/);
-    const image = imgMatch ? imgMatch[1].trim() : "";
+    const imgMatch = articleHtml.match(/<img[^>]*\ssrc="([^"]+)"/);
+    const image = imgMatch ? decodeHtmlEntities(imgMatch[1].trim()) : "";
     const imageType = image ? mediaType(image) : "";
 
-    // Date: check <time dateTime="..."> first, then fallback to datesBySlug
-    const timeMatch = articleHtml.match(/<time\s+dateTime="([^"]+)"/);
-    const rawDate = timeMatch ? timeMatch[1] : datesBySlug.get(slug);
-    const ts = parseDate(rawDate);
+    // The card's printed date first, then the payload's publishedOn.
+    const timeMatch = articleHtml.match(
+      /<time\b(?:[^>]*\sdateTime="([^"]+)")?[^>]*>([^<]*)<\/time>/i,
+    );
+    const ts = parseDate(timeMatch?.[1] || timeMatch?.[2]) ??
+      parseDate(meta?.date);
 
     bySlug.set(slug, {
       slug,
@@ -142,23 +141,43 @@ export function extractPosts(html: string): Post[] {
     });
   }
 
+  if (bySlug.size === 0) {
+    throw new Error("No post links found in Anthropic engineering page cards");
+  }
   return [...bySlug.values()];
 }
 
 /**
- * Extracts published dates from Sanity JSON pairs in the RSC payload.
+ * Per-slug publication date and summary from the Sanity post records embedded
+ * in the RSC stream. These sit inside a JS string literal, so every quote is
+ * backslash-escaped (`\"summary\":\"…\"`) and the text is JSON-escaped twice.
  */
-export function extractDates(html: string): Map<string, string> {
-  const datesBySlug = new Map<string, string>();
-  // Match \"publishedOn\":\"YYYY-MM-DD\" followed by slug
-  const regex =
-    /\\\"publishedOn\\\":\\\"([0-9-]+)\\\"[^}]*?\\\"slug\\\":\{\\\"_type\\\":\\\"slug\\\",\\\"current\\\":\\\"([^"\\]+)\\\"/g;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const [, date, slug] = match;
-    datesBySlug.set(slug, date);
+export function extractPayload(
+  html: string,
+): Map<string, { date?: string; summary?: string }> {
+  const out = new Map<string, { date?: string; summary?: string }>();
+  const records = html.split(/\\"_id\\":/).slice(1);
+  for (const record of records) {
+    const slug =
+      /\\"slug\\":\{\\"_type\\":\\"slug\\",\\"current\\":\\"([^"\\]+)\\"/
+        .exec(record)?.[1];
+    if (!slug || out.has(slug)) continue;
+    const date = /\\"publishedOn\\":\\"([0-9-]+)\\"/.exec(record)?.[1];
+    const rawSummary = /\\"summary\\":\\"(.*?)\\",\\"/.exec(record)?.[1];
+    out.set(slug, {
+      date,
+      summary: rawSummary === undefined ? undefined : unescapeTwice(rawSummary),
+    });
   }
-  return datesBySlug;
+  return out;
+}
+
+function unescapeTwice(s: string): string {
+  try {
+    return JSON.parse(`"${JSON.parse(`"${s}"`)}"`);
+  } catch {
+    return s;
+  }
 }
 
 export function renderRss(feed: {
@@ -208,17 +227,25 @@ export function parseDate(v: unknown): number | null {
     const [y, mo, d, h, mi, sec] = naive.slice(1).map(Number);
     return Date.UTC(y, mo - 1, d, h || 0, mi || 0, sec || 0);
   }
+  // Cards print "Oct 13, 2026", which Date.parse would read in local time.
+  if (/^[A-Za-z]{3,9}\.? \d{1,2}, \d{4}$/.test(s)) {
+    const ts = Date.parse(`${s.replace(".", "")} 00:00:00 UTC`);
+    return Number.isFinite(ts) ? ts : null;
+  }
   const ts = Date.parse(s);
   return Number.isFinite(ts) ? ts : null;
 }
 
 export function postUrl(slug: string): string {
   if (slug.startsWith("http://") || slug.startsWith("https://")) return slug;
-  return `${SITE}/engineering/${slug.replace(/^\/+/, "")}`;
+  return `${SITE}/research/${slug.replace(/^\/+/, "")}`;
 }
 
 export function mediaType(url: string): string {
-  const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1]?.toLowerCase();
+  // Card images are resized through the CDN, and its `fm` param, not the
+  // file's extension, decides what format comes back.
+  const ext = (/[?&]fm=([a-z0-9]+)/i.exec(url)?.[1] ??
+    /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1])?.toLowerCase();
   if (ext) {
     if (ext === "svg") return "image/svg+xml";
     if (ext === "jpg") return "image/jpeg";
