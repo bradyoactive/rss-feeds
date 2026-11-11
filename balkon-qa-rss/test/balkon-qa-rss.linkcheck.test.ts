@@ -17,6 +17,7 @@ import { extractScreenings } from "../balkon-qa-rss.ts";
 import {
   assertAllServed,
   fixture,
+  isChallenged,
   liveTest,
   sampleOf,
   todayIn,
@@ -95,9 +96,15 @@ liveTest("no ticket link is missing", async () => {
   }
 });
 
-liveTest("the film pages the fallback links point at exist", async () => {
+liveTest("the film pages the fallback links point at exist", async (t) => {
   // These ones the val does assemble, from the slug, so they are checkable —
-  // and balkon.film answers a plain request.
+  // while balkon.film answers a plain request. Since 2026-11-11 its film pages
+  // sit behind a Cloudflare bot challenge that 403s every automated request,
+  // real slug or not, so the check can prove nothing and skips instead.
+  if (await isChallenged("https://balkon.film/film/")) {
+    t.skip("balkon.film film pages are behind a Cloudflare bot challenge");
+    return;
+  }
   const screenings = await live();
   await assertAllServed(
     sampleOf(

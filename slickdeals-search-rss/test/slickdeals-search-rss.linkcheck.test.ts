@@ -199,7 +199,13 @@ liveTest("the handler serves a filtered feed end to end", async () => {
 });
 
 liveTest("the live filters actually hold on live data", async () => {
-  const o = opts("minVotes=15&minViews=100&hideExpired=true&priceMax=500");
+  // rating=frontpage reaches back about a day and a half, so the pool holds
+  // deals old enough to have votes. Unfiltered, the newest 100 deals can span
+  // under two hours on a busy day (1.8h on 2026-11-11), none of them old
+  // enough for 15 votes, and this check would fail on volume alone.
+  const o = opts(
+    "rating=frontpage&minVotes=15&minViews=100&hideExpired=true&priceMax=500",
+  );
   const got = applyFilters(await fetchDeals(o), o);
   assert(got.length > 0, "no live deal met a deliberately loose filter set");
   for (const d of got) {
@@ -219,15 +225,24 @@ liveTest("a bad parameter is refused rather than ignored", async () => {
 });
 
 liveTest("a narrow window is answered completely", async () => {
-  // Two hours sits well inside the ~4.5h an unfiltered pool reaches back.
-  const o = opts("hours=2");
+  // How far back an unfiltered pool reaches depends on how busy Slickdeals is:
+  // ~4.5h on 2026-11-08, 1.8h on 2026-11-11. So measure it first and ask for
+  // half of it, which must be reported complete whatever the day's volume.
+  const reach = await fetchDeals(opts(""));
+  const oldest = Math.min(
+    ...reach.map((d) => d.ts).filter((t): t is number => t !== null),
+  );
+  const hours = ((Date.now() - oldest) / 3_600_000 / 2).toFixed(2);
+  const o = opts(`hours=${hours}`);
   const pool = await fetchDeals(o);
   assert(
     windowComplete(pool, o),
-    "two hours should be inside an unfiltered pool",
+    `${hours}h should be inside an unfiltered pool that reached ${(
+      Number(hours) * 2
+    ).toFixed(2)}h`,
   );
   const got = applyFilters(pool, o);
-  assert(got.length > 0, "no deals in the past two hours");
+  assert(got.length > 0, `no deals in the past ${hours} hours`);
   for (const d of got) {
     assert(
       d.ts !== null && d.ts >= o.since!,

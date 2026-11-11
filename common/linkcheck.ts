@@ -19,7 +19,7 @@
  *   npm run test:live     (live checks run)
  */
 
-import { test } from "node:test";
+import { test, type TestContext } from "node:test";
 import { readFile } from "node:fs/promises";
 
 /** How many URLs to spot-check when a feed has more than it is worth fetching. */
@@ -32,8 +32,23 @@ const online = process.env.LIVE === "1";
  * not set: these files sit alongside the offline suites and are caught by the
  * same glob, and a check that cannot run is not a check that failed.
  */
-export function liveTest(name: string, fn: () => Promise<void>) {
+export function liveTest(name: string, fn: (t: TestContext) => Promise<void>) {
   test(name, { skip: !online }, fn);
+}
+
+/**
+ * Whether `url` answers with a Cloudflare bot challenge. A challenged host
+ * returns the same 403 for every path, real or not, so a link check against it
+ * proves nothing either way; such a check should skip and say why.
+ */
+export async function isChallenged(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    await res.body?.cancel();
+    return res.headers.get("cf-mitigated") === "challenge";
+  } catch {
+    return false;
+  }
 }
 
 /**
