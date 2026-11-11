@@ -40,7 +40,6 @@ export default async function (): Promise<Response> {
     const xml = await response.text();
 
     return new Response(
-      // deno-lint-ignore no-control-regex
       xml.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""),
       {
         status: 200,

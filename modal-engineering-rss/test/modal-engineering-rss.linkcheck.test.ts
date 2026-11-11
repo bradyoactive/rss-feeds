@@ -1,7 +1,7 @@
 /**
  * Live link check for the Modal feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/modal-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/modal-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../modal-engineering-rss.ts";

@@ -11,9 +11,11 @@
  *          "image": body.thumbnail.asset->url, "authors": body.postAuthors[]->name }' \
  *     > test/harvey-sanity-technical.json
  *
- * Run: deno test --allow-read test/harvey-technical-rss.test.ts
+ * Run: node --test test/harvey-technical-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -23,14 +25,14 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./harvey-sanity-technical.json", import.meta.url),
+  await readFile(
+    new URL("./harvey-sanity-technical.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(payload);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("reads the whole tag from one query", () => {
+test("reads the whole tag from one query", () => {
   assertEquals(posts.length, 41, "post count");
   assertEquals(
     posts.length,
@@ -45,7 +47,7 @@ Deno.test("reads the whole tag from one query", () => {
   );
 });
 
-Deno.test("every post arrives complete — no per-post fetch needed", () => {
+test("every post arrives complete — no per-post fetch needed", () => {
   // The point of using the API: the rendered cards carry none of this, which is
   // what used to cost one fetch per post.
   for (const field of ["ts", "description", "image"] as const) {
@@ -62,7 +64,7 @@ Deno.test("every post arrives complete — no per-post fetch needed", () => {
   );
 });
 
-Deno.test("keeps a byline that is a group rather than a person", () => {
+test("keeps a byline that is a group rather than a person", () => {
   // These four have no JSON-LD Person node on their pages, so the old scraper
   // dropped their byline entirely. This is the regression the API fixed.
   for (
@@ -77,7 +79,7 @@ Deno.test("keeps a byline that is a group rather than a person", () => {
   }
 });
 
-Deno.test("reads a known post's fields", () => {
+test("reads a known post's fields", () => {
   const p = bySlug("scaling-document-processing-across-harvey")!;
   assertEquals(
     p.title,
@@ -98,7 +100,7 @@ Deno.test("reads a known post's fields", () => {
   );
 });
 
-Deno.test("asks Sanity for a format the reader can use", () => {
+test("asks Sanity for a format the reader can use", () => {
   // The raw asset is a PNG; auto=format is what serves WebP to readers that
   // accept it, and is what the site's own pages request.
   assert(
@@ -111,12 +113,12 @@ Deno.test("asks Sanity for a format the reader can use", () => {
   );
 });
 
-Deno.test("posts arrive newest first", () => {
+test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("degrades on a row missing its optional fields", () => {
+test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts({ result: [{ slug: "bare", title: "Bare" }] });
   assertEquals(post, {
     slug: "bare",
@@ -128,7 +130,7 @@ Deno.test("degrades on a row missing its optional fields", () => {
   }, "bare post");
 });
 
-Deno.test("survives a payload that is not what we asked for", () => {
+test("survives a payload that is not what we asked for", () => {
   assertEquals(extractPosts({}).length, 0, "no result key");
   assertEquals(extractPosts({ result: null }).length, 0, "null result");
   assertEquals(
@@ -142,7 +144,7 @@ Deno.test("survives a payload that is not what we asked for", () => {
 const feed = () =>
   buildFeed(posts, new URL("https://feed.val.run/harvey")).text();
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 41, "all posts");
   assert(
@@ -167,7 +169,7 @@ Deno.test("serves the feed", async () => {
   );
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await buildFeed(
     posts,
     new URL("https://feed.val.run/harvey?limit=5&tag=product&utm_source=x"),
@@ -190,7 +192,7 @@ const SAMPLE_ITEM: Post = {
   authors: ["Ada & Grace"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -219,12 +221,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const xml = renderRss({
     title: "T",
     description: "d",
@@ -236,7 +237,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
 
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

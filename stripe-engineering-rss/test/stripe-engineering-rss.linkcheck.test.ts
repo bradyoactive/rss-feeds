@@ -1,7 +1,7 @@
 /**
  * Live link check for the Stripe feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/stripe-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/stripe-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts, postUrl } from "../stripe-engineering-rss.ts";

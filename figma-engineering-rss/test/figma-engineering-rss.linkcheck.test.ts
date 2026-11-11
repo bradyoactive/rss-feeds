@@ -1,7 +1,7 @@
 /**
  * Live link check for the Figma feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/figma-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/figma-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../figma-engineering-rss.ts";

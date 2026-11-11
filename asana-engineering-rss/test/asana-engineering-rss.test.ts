@@ -7,9 +7,11 @@
  *     "https://asana.com/inside-asana/engineering-spotlight" \
  *     > test/asana-engineering-spotlight.html
  *
- * Run: deno test --allow-read test/asana-engineering-rss.test.ts
+ * Run: node --test test/asana-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../asana-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./asana-engineering-spotlight.html", import.meta.url),
+const html = await readFile(
+  new URL("./asana-engineering-spotlight.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const byPath = (path: string) => posts.find((p) => p.path === path);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 93, "post count");
   assert(
     posts.every((p) => p.title && p.path),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -53,7 +55,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("every post has an image and a valid media type", () => {
+test("every post has an image and a valid media type", () => {
   assertEquals(
     posts.filter((p) => !p.image).length,
     0,
@@ -65,7 +67,7 @@ Deno.test("every post has an image and a valid media type", () => {
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = byPath(
     "/inside-asana/database-architecture-sharding-scaling",
   )!;
@@ -85,7 +87,7 @@ Deno.test("reads a known post's fields accurately", () => {
   );
 });
 
-Deno.test("captures secondary topic tags", () => {
+test("captures secondary topic tags", () => {
   const p = byPath("/inside-asana/cut-browsers-agent-cost")!;
   assert(p, "post exists");
   assertEquals(p.author, "Frank Hidalgo", "guest author");
@@ -96,7 +98,7 @@ Deno.test("captures secondary topic tags", () => {
   );
 });
 
-Deno.test("handles posts outside /inside-asana/ prefix", () => {
+test("handles posts outside /inside-asana/ prefix", () => {
   const p = byPath("/resources/scaling-lunadb")!;
   assert(p, "resources post found in engineering spotlight");
   assertEquals(
@@ -112,7 +114,7 @@ Deno.test("handles posts outside /inside-asana/ prefix", () => {
   );
 });
 
-Deno.test("handles authorless posts without error", () => {
+test("handles authorless posts without error", () => {
   const authorless = posts.filter((p) => !p.author);
   assert(
     authorless.length > 0,
@@ -128,7 +130,7 @@ Deno.test("handles authorless posts without error", () => {
   }
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-10-10T00:00:00.000Z"),
     Date.parse("2026-10-10T00:00:00.000Z"),
@@ -146,7 +148,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("postUrl prepends SITE domain appropriately", () => {
+test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("/inside-asana/test-post"),
     "https://asana.com/inside-asana/test-post",
@@ -161,7 +163,7 @@ Deno.test("postUrl prepends SITE domain appropriately", () => {
   );
 });
 
-Deno.test("mediaType determines MIME type from extension or defaults to image/jpeg", () => {
+test("mediaType determines MIME type from extension or defaults to image/jpeg", () => {
   assertEquals(mediaType("https://example.com/photo.png"), "image/png");
   assertEquals(mediaType("https://example.com/photo.webp"), "image/webp");
   assertEquals(mediaType("https://example.com/photo.jpg"), "image/jpeg");
@@ -171,7 +173,7 @@ Deno.test("mediaType determines MIME type from extension or defaults to image/jp
   );
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/asana"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -181,7 +183,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
+test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
   const sample: Post[] = [
     {
       path: "/inside-asana/test-post",
@@ -223,12 +225,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   );
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if __NEXT_DATA__ is missing", () => {
+test("throws error if __NEXT_DATA__ is missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No next data here</body></html>");

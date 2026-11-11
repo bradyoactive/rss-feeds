@@ -1,15 +1,12 @@
 /**
  * The two assertions every feed's offline suite is written against.
  *
- * Deliberately hand-rolled rather than pulled from @std/assert: these suites
- * run with nothing but `deno test --allow-read`, and a registry dependency
- * would be the only thing standing between a fixture and a green run.
+ * Deliberately hand-rolled: messages read the same in every suite, and the
+ * failure label says which field was wrong.
  *
- * This is test-only code, and the one thing the vals themselves share. Their
- * runtime helpers (`esc`, `slugify`, `clamp`, …) stay duplicated per val on
- * purpose: each deploys to val.town as a single self-contained `main.ts`, so a
- * shared runtime module would have to be imported across esm.town, which is
- * what lets one feed's edit break another's deploy.
+ * This is test-only code. The feeds' runtime helpers (`esc`, `slugify`,
+ * `clamp`, …) are duplicated per feed because each was once deployed to
+ * val.town as a self-contained `main.ts`.
  */
 
 export function assert(cond: unknown, msg: string): asserts cond {

@@ -360,7 +360,6 @@ function slugify(s: string): string {
  * just its own item.
  */
 function clean(s: string): string {
-  // deno-lint-ignore no-control-regex
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 

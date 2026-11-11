@@ -7,9 +7,11 @@
  *     "https://eng.snap.com/blog" \
  *     > test/snap-engineering.html
  *
- * Run: deno test --allow-read test/snap-engineering-rss.test.ts
+ * Run: node --test test/snap-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../snap-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./snap-engineering.html", import.meta.url),
+const html = await readFile(
+  new URL("./snap-engineering.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 11, "post count");
   assert(
     posts.every((p) => p.title && p.slug),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("reads a known Tile post's fields accurately", () => {
+test("reads a known Tile post's fields accurately", () => {
   const p = bySlug("ds_agent")!;
   assert(p, "post exists");
   assertEquals(
@@ -59,13 +61,13 @@ Deno.test("reads a known Tile post's fields accurately", () => {
   assertEquals(postUrl(p.slug), "https://eng.snap.com/ds_agent", "post URL");
 });
 
-Deno.test("captures branded categories like spectacles", () => {
+test("captures branded categories like spectacles", () => {
   const p = bySlug("specs_experiences")!;
   assert(p, "post exists");
   assertEquals(p.categories, ["Engineering", "Spectacles"], "brand category");
 });
 
-Deno.test("reads carousel posts accurately", () => {
+test("reads carousel posts accurately", () => {
   const p = bySlug("stomp-out-bad-metrics")!;
   assert(p, "post exists");
   assertEquals(p.title, "STOMP out Bad Metrics", "carousel title");
@@ -73,7 +75,7 @@ Deno.test("reads carousel posts accurately", () => {
   assertEquals(p.imageType, "image/jpeg", "image type");
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-09-10T18:09:45.672Z"),
     Date.parse("2026-09-10T18:09:45.672Z"),
@@ -87,7 +89,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("postUrl prepends SITE domain appropriately", () => {
+test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("ds_agent"),
     "https://eng.snap.com/ds_agent",
@@ -102,13 +104,13 @@ Deno.test("postUrl prepends SITE domain appropriately", () => {
   );
 });
 
-Deno.test("mediaType determines MIME type from extension", () => {
+test("mediaType determines MIME type from extension", () => {
   assertEquals(mediaType("https://example.com/photo.png"), "image/png");
   assertEquals(mediaType("https://example.com/photo.svg"), "image/svg+xml");
   assertEquals(mediaType("https://example.com/photo.jpg"), "image/jpeg");
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/snap"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -118,7 +120,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
+test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
   const sample: Post[] = [
     {
       slug: "ds_agent",
@@ -161,12 +163,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   assert(xml.includes('type="image/png"'), "enclosure states media type");
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if CONTENTFUL_RESULTS is missing", () => {
+test("throws error if CONTENTFUL_RESULTS is missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No apollo state here</body></html>");

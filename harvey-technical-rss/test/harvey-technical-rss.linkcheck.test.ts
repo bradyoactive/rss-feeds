@@ -1,7 +1,7 @@
 /**
  * Live link check for the Harvey feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/harvey-technical-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/harvey-technical-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../harvey-technical-rss.ts";

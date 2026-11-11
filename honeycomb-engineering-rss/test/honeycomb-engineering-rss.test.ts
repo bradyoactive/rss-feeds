@@ -7,9 +7,11 @@
  *     --data-urlencode "query=<the GROQ export>" \
  *     -o honeycomb-sanity-software-engineering.json
  *
- * Run: deno test --allow-read test/honeycomb-engineering-rss.test.ts
+ * Run: node --test test/honeycomb-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -20,8 +22,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./honeycomb-sanity-software-engineering.json", import.meta.url),
+  await readFile(
+    new URL("./honeycomb-sanity-software-engineering.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -31,7 +33,7 @@ const FEED_URL = "https://feed.val.run/honeycomb";
 const feed = (query = "") =>
   buildFeed(posts, new URL(`${FEED_URL}${query}`)).text();
 
-Deno.test("reads every article in the topic", () => {
+test("reads every article in the topic", () => {
   assertEquals(posts.length, 100, "articles");
   assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
   assertEquals(
@@ -48,7 +50,7 @@ Deno.test("reads every article in the topic", () => {
   );
 });
 
-Deno.test("reads every field of a known article", () => {
+test("reads every field of a known article", () => {
   const p = post("embracing-code-review-bottleneck");
   assertEquals(p.title, "Embracing the Code Review Bottleneck", "title");
   assertEquals(p.author, "Fred Hebert", "author, resolved through a reference");
@@ -62,7 +64,7 @@ Deno.test("reads every field of a known article", () => {
   assert(p.summary.startsWith("Faced with an endless stream"), "summary");
 });
 
-Deno.test("resolves the topic by slug, not by title", () => {
+test("resolves the topic by slug, not by title", () => {
   // Titles are not unique in this dataset — two different topic documents are
   // both called "AI & LLMs" — so matching on one would be a coin flip.
   assert(
@@ -75,7 +77,7 @@ Deno.test("resolves the topic by slug, not by title", () => {
   );
 });
 
-Deno.test("reaches the image through the assetImage wrapper", () => {
+test("reaches the image through the assetImage wrapper", () => {
   // mainImage is an `assetImage`, so the asset sits at mainImage.image.asset.
   // Reading mainImage.asset returns null for every article rather than
   // failing, which is how this was wrong and silent the first time.
@@ -94,7 +96,7 @@ Deno.test("reaches the image through the assetImage wrapper", () => {
   );
 });
 
-Deno.test("keeps an article whose summary is missing", () => {
+test("keeps an article whose summary is missing", () => {
   // Three of the hundred have none; they should still appear, just without a
   // <description>.
   const withoutSummary = posts.filter((p) => !p.summary);
@@ -105,7 +107,7 @@ Deno.test("keeps an article whose summary is missing", () => {
   );
 });
 
-Deno.test("survives input that is not the response we asked for", () => {
+test("survives input that is not the response we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ result: [] }).length, 0, "empty");
   assertEquals(extractPosts({ result: "nope" }).length, 0, "not an array");
@@ -116,7 +118,7 @@ Deno.test("survives input that is not the response we asked for", () => {
   );
 });
 
-Deno.test("serves the topic", async () => {
+test("serves the topic", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 100, "every article");
   assert(
@@ -146,14 +148,14 @@ Deno.test("serves the topic", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?topic=Culture&limit=5");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 100, "params ignored");
@@ -171,7 +173,7 @@ const SAMPLE: Post = {
   topics: ["Software Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -200,12 +202,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -217,7 +218,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the article lacks them", () => {
+test("omits optional elements when the article lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

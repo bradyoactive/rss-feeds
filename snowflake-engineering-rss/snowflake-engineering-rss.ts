@@ -23,7 +23,7 @@
  *  - `publicationDate` is a *display* string, "SEP 08, 2026". `new Date()` will
  *    take it, but it reads it as local midnight, so the same post dates
  *    differently depending on where the code runs — UTC on val.town by
- *    accident, and the machine's zone under `deno test`. `parseDate` below
+ *    accident, and the machine's zone under `node --test`. `parseDate` below
  *    reads it explicitly as UTC instead, so a post's date is a fact rather than
  *    a property of the host.
  *  - A hit's title lives at `title.lines[]` (an array, because the component
@@ -259,7 +259,6 @@ function list(v: unknown): unknown[] {
  * just its own item.
  */
 function clean(s: string): string {
-  // deno-lint-ignore no-control-regex
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 

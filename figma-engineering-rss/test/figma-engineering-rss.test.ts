@@ -10,9 +10,11 @@
  *
  *   curl -sL https://www.figma.com/blogSearch/blog-data.json | python3 -c '…'
  *
- * Run: deno test --allow-read test/figma-engineering-rss.test.ts
+ * Run: node --test test/figma-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -22,13 +24,13 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./figma-blog-search-index.json", import.meta.url),
+  await readFile(
+    new URL("./figma-blog-search-index.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(raw);
 
-Deno.test("reads the tagged posts and only those", () => {
+test("reads the tagged posts and only those", () => {
   assertEquals(raw.length, 33, "records in the fixture");
   assertEquals(posts.length, 23, "tagged Engineering");
   assert(posts.every((p) => p.path && p.title), "every post has a path/title");
@@ -43,7 +45,7 @@ Deno.test("reads the tagged posts and only those", () => {
   );
 });
 
-Deno.test("matches the tag on its slug, not its display name", () => {
+test("matches the tag on its slug, not its display name", () => {
   // The whole filter rests on this: Figma can rename the tag in Sanity and the
   // feed keeps working, because the slug is the tag page's own URL.
   const record = (tag: { name: string; slug: string }) => ({
@@ -67,7 +69,7 @@ Deno.test("matches the tag on its slug, not its display name", () => {
   );
 });
 
-Deno.test("reads every field of a known item", () => {
+test("reads every field of a known item", () => {
   const p = posts.find((p) =>
     p.path === "/blog/the-benefits-of-code-connect-in-mcp/"
   )!;
@@ -95,14 +97,14 @@ Deno.test("reads every field of a known item", () => {
   assert(p.lede.startsWith("When going from design to code"), "lede");
 });
 
-Deno.test("joins several authors the way the byline reads", () => {
+test("joins several authors the way the byline reads", () => {
   const p = posts.find((p) =>
     p.path === "/blog/figma-rendering-powered-by-webgpu/"
   )!;
   assertEquals(p.author, "Alex Ringlein & Luke Anderson");
 });
 
-Deno.test("flattens the lede's portable text", () => {
+test("flattens the lede's portable text", () => {
   // Spans are the runs of one sentence, split where a link or emphasis starts,
   // so they join with nothing between them — a separator would insert spaces
   // mid-sentence. Blocks are paragraphs and do get one.
@@ -125,7 +127,7 @@ Deno.test("flattens the lede's portable text", () => {
   assert(posts.every((p) => p.lede), "every post in the fixture has a lede");
 });
 
-Deno.test("reads dates in both shapes the index stores", () => {
+test("reads dates in both shapes the index stores", () => {
   // Older posts carry a bare "2025-09-18" and newer ones a Z-suffixed instant.
   // Date.parse reads both as UTC; a naive datetime would have been read as
   // local time and shifted by however many hours the val happened to run at.
@@ -140,7 +142,7 @@ Deno.test("reads dates in both shapes the index stores", () => {
   assert(posts.every((p) => p.ts !== null), "every post is dated");
 });
 
-Deno.test("takes the cover image when the card has none", () => {
+test("takes the cover image when the card has none", () => {
   // Three posts in the fixture only set coverMedia; ten set neither, because
   // their card is a video or an embed and Figma almost never fills in a poster.
   const withImage = posts.filter((p) => p.image);
@@ -155,7 +157,7 @@ Deno.test("takes the cover image when the card has none", () => {
   );
 });
 
-Deno.test("survives input that is not the index we asked for", () => {
+test("survives input that is not the index we asked for", () => {
   assertEquals(extractPosts([]).length, 0, "empty");
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ hits: [] }).length, 0, "not an array");
@@ -174,7 +176,7 @@ Deno.test("survives input that is not the index we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/figma${query}`)).text();
 
-Deno.test("serves the Engineering tag", async () => {
+test("serves the Engineering tag", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 23, "every tagged post");
   assert(
@@ -194,14 +196,14 @@ Deno.test("serves the Engineering tag", async () => {
   assert(body.includes("<category>Engineering</category>"), "category");
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?tag=design&limit=5&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/figma" rel="self"'),
@@ -223,7 +225,7 @@ const SAMPLE_ITEM: Post = {
   labels: ["Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -256,12 +258,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -273,7 +274,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the item lacks them", () => {
+test("omits optional elements when the item lacks them", () => {
   const bare: Post = {
     path: "/blog/bare/",
     title: "Bare",

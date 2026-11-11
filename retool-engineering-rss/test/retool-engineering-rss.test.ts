@@ -7,9 +7,11 @@
  *     "https://retool.com/blog/category/engineering" \
  *     > test/retool-engineering.html
  *
- * Run: deno test --allow-read test/retool-engineering-rss.test.ts
+ * Run: node --test test/retool-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../retool-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./retool-engineering.html", import.meta.url),
+const html = await readFile(
+  new URL("./retool-engineering.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const byUrl = (url: string) => posts.find((p) => p.url === url);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 12, "post count");
   assert(
     posts.every((p) => p.title && p.url),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -53,7 +55,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("every post has a 16:9 hero image from Sanity CDN", () => {
+test("every post has a 16:9 hero image from Sanity CDN", () => {
   assertEquals(
     posts.filter((p) => !p.image).length,
     0,
@@ -67,7 +69,7 @@ Deno.test("every post has a 16:9 hero image from Sanity CDN", () => {
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = byUrl("https://retool.com/blog/retool-mcp-vs-cli")!;
   assert(p, "post exists");
   assertEquals(
@@ -86,13 +88,13 @@ Deno.test("reads a known post's fields accurately", () => {
   assertEquals(p.categories, ["Engineering"], "categories");
 });
 
-Deno.test("decodes html entities in titles and summaries", () => {
+test("decodes html entities in titles and summaries", () => {
   const p = byUrl("https://retool.com/blog/mfa-isnt-mfa")!;
   assert(p, "mfa post exists");
   assertEquals(p.title, "When MFA isn't actually MFA", "decoded apostrophe");
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-09-24"),
     Date.UTC(2026, 8, 24, 0, 0, 0),
@@ -106,7 +108,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("normalizeUrl handles absolute and relative paths", () => {
+test("normalizeUrl handles absolute and relative paths", () => {
   assertEquals(
     normalizeUrl("https://retool.com/blog/test"),
     "https://retool.com/blog/test",
@@ -117,13 +119,13 @@ Deno.test("normalizeUrl handles absolute and relative paths", () => {
   );
 });
 
-Deno.test("mediaType determines MIME type from extension", () => {
+test("mediaType determines MIME type from extension", () => {
   assertEquals(mediaType("https://example.com/photo.png"), "image/png");
   assertEquals(mediaType("https://example.com/photo.svg"), "image/svg+xml");
   assertEquals(mediaType("https://example.com/photo.jpg"), "image/jpeg");
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/retool"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -133,7 +135,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
+test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
   const sample: Post[] = [
     {
       url: "https://retool.com/blog/sample",
@@ -171,12 +173,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   assert(xml.includes('type="image/png"'), "enclosure states media type");
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if blog article items are missing", () => {
+test("throws error if blog article items are missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No articles here</body></html>");

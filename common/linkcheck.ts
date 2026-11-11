@@ -12,26 +12,28 @@
  * still resolves them as siblings of the test rather than of the val.
  *
  * These hit the network, so they are declared with `liveTest`, which skips them
- * unless --allow-net is granted. One glob then serves both moods — offline runs
- * report them as ignored, and adding --allow-net turns them on:
+ * unless LIVE=1 is set. One glob then serves both moods — offline runs report
+ * them as skipped, and setting LIVE=1 turns them on:
  *
- *   deno test --allow-read             (live checks skip)
- *   deno test --allow-read --allow-net (live checks run)
+ *   npm test              (live checks skip)
+ *   npm run test:live     (live checks run)
  */
+
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 
 /** How many URLs to spot-check when a feed has more than it is worth fetching. */
 export const SAMPLE = 12;
 
-const online = (await Deno.permissions.query({ name: "net" })).state ===
-  "granted";
+const online = process.env.LIVE === "1";
 
 /**
- * A test that needs the network. Skipped rather than failed when --allow-net is
- * absent: these files sit alongside the offline suites and are caught by the
+ * A test that needs the network. Skipped rather than failed when LIVE=1 is
+ * not set: these files sit alongside the offline suites and are caught by the
  * same glob, and a check that cannot run is not a check that failed.
  */
 export function liveTest(name: string, fn: () => Promise<void>) {
-  Deno.test({ name, ignore: !online, fn });
+  test(name, { skip: !online }, fn);
 }
 
 /**
@@ -94,11 +96,10 @@ export async function assertAllServed(
 
 /** Reads a fixture that sits beside the test that asks for it. */
 export function fixture(meta: ImportMeta, name: string): Promise<string> {
-  return Deno.readTextFile(new URL(`./${name}`, meta.url));
+  return readFile(new URL(`./${name}`, meta.url), "utf8");
 }
 
 /** Same, for the captures that are JSON payloads rather than markup. */
-// deno-lint-ignore no-explicit-any
 export async function jsonFixture(
   meta: ImportMeta,
   name: string,

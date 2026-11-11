@@ -1,7 +1,7 @@
 /**
  * Live link check for the Mistral feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/mistral-news-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/mistral-news-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../mistral-news-rss.ts";

@@ -1,7 +1,7 @@
 /**
  * Live link check for the Honeycomb feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/honeycomb-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/honeycomb-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts, GROQ } from "../honeycomb-engineering-rss.ts";

@@ -1,7 +1,7 @@
 /**
  * Live link check for the BALKON Q&A feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/balkon-qa-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/balkon-qa-rss.linkcheck.test.ts
  *
  * The fixture here is a rolling calendar rather than an archive, so its links
  * go stale on their own: a screening that has happened may stop being served.

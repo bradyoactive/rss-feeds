@@ -1,7 +1,7 @@
 /**
  * Live checks for the parameterised Slickdeals feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/slickdeals-search-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/slickdeals-search-rss.linkcheck.test.ts
  *
  * Most of these are not link checks at all. This val's whole design rests on
  * measured facts about the POST endpoint — that it honours `sort`, that its
@@ -12,7 +12,7 @@
  * *more* deals than asked for, not fewer.
  */
 
-import { assert, assertEquals } from "jsr:@std/assert@1";
+import { deepStrictEqual as assertEquals, ok as assert } from "node:assert/strict";
 import handler, {
   applyFilters,
   type Deal,

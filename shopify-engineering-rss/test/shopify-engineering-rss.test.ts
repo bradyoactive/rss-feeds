@@ -4,9 +4,11 @@
  *
  *   curl -s https://shopify.engineering/latest.data -o shopify-latest.data.json
  *
- * Run: deno test --allow-read test/shopify-engineering-rss.test.ts
+ * Run: node --test test/shopify-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   decode,
@@ -17,14 +19,14 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./shopify-latest.data.json", import.meta.url),
+  await readFile(
+    new URL("./shopify-latest.data.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(raw);
 const post = (handle: string) => posts.find((p) => p.handle === handle)!;
 
-Deno.test("reads every article on the page", () => {
+test("reads every article on the page", () => {
   assertEquals(posts.length, 20, "articles");
   assert(
     posts.every((p) => p.handle && p.title),
@@ -40,7 +42,7 @@ Deno.test("reads every article on the page", () => {
   assert(posts.every((p) => p.image), "every post has an image");
 });
 
-Deno.test("reads every field of a known item", () => {
+test("reads every field of a known item", () => {
   const p = post("mobile-e2e-testing");
   assertEquals(
     p.title,
@@ -60,7 +62,7 @@ Deno.test("reads every field of a known item", () => {
   );
 });
 
-Deno.test("credits the authors metafield ahead of authorV2", () => {
+test("credits the authors metafield ahead of authorV2", () => {
   // This post's authorV2 is the house name; only the metafield names a person.
   assertEquals(post("mobile-e2e-testing").author, "Michael Garfinkle");
   // And the metafield is the only source that can hold more than one name.
@@ -71,14 +73,14 @@ Deno.test("credits the authors metafield ahead of authorV2", () => {
   );
 });
 
-Deno.test("falls back to authorV2, then to the house name", () => {
+test("falls back to authorV2, then to the house name", () => {
   // No authors metafield on this one, but authorV2 names the writer.
   assertEquals(post("autoresearch").author, "David Cortés");
   // Neither source names anyone here, so the blog itself is the byline.
   assertEquals(post("tangle").author, "Shopify Engineering");
 });
 
-Deno.test("keeps Shopify's topics and drops its internal tags", () => {
+test("keeps Shopify's topics and drops its internal tags", () => {
   // The payload mixes displayed topics with workflow markers and with
   // author: slugs that duplicate the byline.
   assertEquals(
@@ -113,11 +115,11 @@ Deno.test("keeps Shopify's topics and drops its internal tags", () => {
   );
 });
 
-Deno.test("names jpg by its media type rather than its extension", () => {
+test("names jpg by its media type rather than its extension", () => {
   assertEquals(post("quick").imageType, "image/jpeg", "not image/jpg");
 });
 
-Deno.test("finds the articles without reaching through the route id", () => {
+test("finds the articles without reaching through the route id", () => {
   // The route id is derived from a file path and is the likeliest thing to
   // drift, so extraction keys off __typename instead.
   const article = {
@@ -148,8 +150,7 @@ Deno.test("finds the articles without reaching through the route id", () => {
   assertEquals(p.author, "Ada");
 });
 
-Deno.test("decodes the turbo-stream encoding", () => {
-  // deno-lint-ignore no-explicit-any
+test("decodes the turbo-stream encoding", () => {
   const root = decode(raw) as any;
   assertEquals(Object.keys(root), ["root", "latest"], "route ids");
 
@@ -173,28 +174,26 @@ Deno.test("decodes the turbo-stream encoding", () => {
   );
 });
 
-Deno.test("tells an interned key from a literal underscore key", () => {
+test("tells an interned key from a literal underscore key", () => {
   // "_12" means "the string at index 12", but `__typename` is a literal key —
   // and it is the one the article search keys off, so reading it as an index
   // would quietly hide every article.
-  // deno-lint-ignore no-explicit-any
   const out = decode([{ "_1": 2 }, "wrapped", {
     __typename: "Article",
   }]) as any;
   assertEquals(out.wrapped, { __typename: "Article" });
 });
 
-Deno.test("resolves a shared index to one object rather than a copy", () => {
+test("resolves a shared index to one object rather than a copy", () => {
   // The payload references the same subtree from many places; the decoder
   // memoises, which is what keeps it linear.
   const shared = [{ "_1": 2, "_3": 2 }, "left", { "_4": 5 }, "right", "n", 42];
-  // deno-lint-ignore no-explicit-any
   const out = decode(shared) as any;
   assertEquals(out.left, { n: 42 }, "decoded once");
   assert(out.left === out.right, "and both references point at it");
 });
 
-Deno.test("survives input that is not the payload we asked for", () => {
+test("survives input that is not the payload we asked for", () => {
   assertEquals(extractPosts([]).length, 0, "empty");
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ articles: [] }).length, 0, "not an array");
@@ -212,7 +211,7 @@ Deno.test("survives input that is not the payload we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/shopify${query}`)).text();
 
-Deno.test("serves the latest articles", async () => {
+test("serves the latest articles", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 20, "every article");
   assert(
@@ -236,14 +235,14 @@ Deno.test("serves the latest articles", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?limit=5&tag=Mobile&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/shopify" rel="self"'),
@@ -265,7 +264,7 @@ const SAMPLE_ITEM: Post = {
   topics: ["Infrastructure"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -295,12 +294,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -312,7 +310,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the item lacks them", () => {
+test("omits optional elements when the item lacks them", () => {
   const bare: Post = {
     handle: "bare",
     title: "Bare",

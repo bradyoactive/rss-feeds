@@ -1,7 +1,7 @@
 /**
  * Live link check for the Anthropic feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/anthropic-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/anthropic-engineering-rss.linkcheck.test.ts
  */
 
 import {

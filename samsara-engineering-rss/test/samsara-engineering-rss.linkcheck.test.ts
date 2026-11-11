@@ -1,7 +1,7 @@
 /**
  * Live link check for the Samsara feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/samsara-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/samsara-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../samsara-engineering-rss.ts";

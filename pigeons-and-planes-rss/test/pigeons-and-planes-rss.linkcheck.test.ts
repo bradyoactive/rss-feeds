@@ -1,7 +1,7 @@
 /**
  * Live link check for the Pigeons & Planes feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/pigeons-and-planes-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/pigeons-and-planes-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts } from "../pigeons-and-planes-rss.ts";

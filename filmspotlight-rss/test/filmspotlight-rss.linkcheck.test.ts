@@ -1,7 +1,7 @@
 /**
  * Live link check for the NYC Film Spotlight feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/filmspotlight-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/filmspotlight-rss.linkcheck.test.ts
  *
  * The fixture is a rolling calendar rather than an archive, so the checks that
  * matter run against the live API; the fixture is used only where a comparison

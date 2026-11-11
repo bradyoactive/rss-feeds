@@ -1,7 +1,7 @@
 /**
  * Live link check for the Retool feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/retool-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/retool-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts } from "../retool-engineering-rss.ts";

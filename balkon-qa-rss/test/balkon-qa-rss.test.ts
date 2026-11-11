@@ -12,9 +12,11 @@
  * Note the counts below move whenever it is recaptured — it is a rolling
  * calendar, not an archive.
  *
- * Run: deno test --allow-read test/balkon-qa-rss.test.ts
+ * Run: node --test test/balkon-qa-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractScreenings,
@@ -23,8 +25,8 @@ import {
 } from "../balkon-qa-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./balkon-qa.html", import.meta.url),
+const html = await readFile(
+  new URL("./balkon-qa.html", import.meta.url), "utf8",
 );
 const screenings = extractScreenings(html);
 const find = (id: string) => screenings.find((s) => s.id.startsWith(id))!;
@@ -32,7 +34,7 @@ const find = (id: string) => screenings.find((s) => s.id.startsWith(id))!;
 const NOW = new Date("2026-08-17T12:00:00Z");
 const FEED_URL = "https://feed.val.run/balkon";
 
-Deno.test("reads every screening in the listing", () => {
+test("reads every screening in the listing", () => {
   assertEquals(screenings.length, 44, "screenings");
   assertEquals(
     screenings.length,
@@ -47,7 +49,7 @@ Deno.test("reads every screening in the listing", () => {
   );
 });
 
-Deno.test("reads every field of a known screening", () => {
+test("reads every field of a known screening", () => {
   const s = find("wendigo|film_at_lincoln_center");
   assertEquals(s.film, "Wendigo", "film");
   assertEquals(s.theater, "Film at Lincoln Center", "theater");
@@ -63,7 +65,7 @@ Deno.test("reads every field of a known screening", () => {
   assertEquals(s.link, "https://purchase.filmlinc.org/83576/83577", "tickets");
 });
 
-Deno.test("takes the date from the divider above the item", () => {
+test("takes the date from the divider above the item", () => {
   // The date is nowhere in the item itself, so this is the one piece of state
   // the parse carries — and the failure mode if it breaks is every screening
   // landing on one day rather than an obvious crash.
@@ -86,7 +88,7 @@ Deno.test("takes the date from the divider above the item", () => {
   assert(byDate.size > 1, "screenings are spread across days, not lumped");
 });
 
-Deno.test("gets the year from the date strip, not from the divider", () => {
+test("gets the year from the date strip, not from the divider", () => {
   // Dividers say "Mon · August 17" with no year. Only the strip's own links
   // state one, which is what keeps a December listing from being read as this
   // January.
@@ -112,7 +114,7 @@ Deno.test("gets the year from the date strip, not from the divider", () => {
   );
 });
 
-Deno.test("drops a screening it cannot date", () => {
+test("drops a screening it cannot date", () => {
   // Better to lose an item than to file it under the wrong day.
   const orphan = `
     <a href="/qa?date=2026-08-17"></a>
@@ -123,7 +125,7 @@ Deno.test("drops a screening it cannot date", () => {
   assertEquals(extractScreenings(orphan).length, 0, "no divider, no item");
 });
 
-Deno.test("separates the showtime from its tag", () => {
+test("separates the showtime from its tag", () => {
   // Not every showtime is a Q&A — some are an intro — and the label is its own
   // element, so stripping the word "Q&A" would leave "intro 8:40 PM".
   const s = find("boyhood|ifc_center");
@@ -134,7 +136,7 @@ Deno.test("separates the showtime from its tag", () => {
   );
 });
 
-Deno.test("carries no sold-out status", () => {
+test("carries no sold-out status", () => {
   // Excluded on purpose: it flips while the screening sits in the feed, and
   // FreshRSS hashes item content to decide whether an entry changed — so
   // carrying it would re-date and resurface the item.
@@ -150,7 +152,7 @@ Deno.test("carries no sold-out status", () => {
   assert(!/sold.?out/i.test(xml), "and none of it reaches the feed");
 });
 
-Deno.test("falls back to the film page when there is no ticket link", () => {
+test("falls back to the film page when there is no ticket link", () => {
   const s = find("wild-inside|low_cinema");
   assertEquals(s.times, [], "this one has no showtime at all");
   assertEquals(
@@ -160,7 +162,7 @@ Deno.test("falls back to the film page when there is no ticket link", () => {
   );
 });
 
-Deno.test("decodes the entities the page escapes", () => {
+test("decodes the entities the page escapes", () => {
   assert(
     !screenings.some((s) => /&(amp|lt|gt|quot|#\d+);/.test(s.film + s.blurb)),
     "no entity survives into a film title or blurb",
@@ -171,7 +173,7 @@ Deno.test("decodes the entities the page escapes", () => {
   );
 });
 
-Deno.test("survives markup that is not the listing", () => {
+test("survives markup that is not the listing", () => {
   assertEquals(extractScreenings("").length, 0, "empty");
   assertEquals(extractScreenings("<html>nope</html>").length, 0, "not it");
   assertEquals(
@@ -187,7 +189,7 @@ Deno.test("survives markup that is not the listing", () => {
 const feed = (query = "") =>
   buildFeed(screenings, new URL(`${FEED_URL}${query}`), NOW).text();
 
-Deno.test("serves the listing", async () => {
+test("serves the listing", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 44, "every screening");
   assert(
@@ -208,7 +210,7 @@ Deno.test("serves the listing", async () => {
   );
 });
 
-Deno.test("identifies an item by film, theater and day", () => {
+test("identifies an item by film, theater and day", () => {
   // The only val that sets an explicit id. The link is a ticket URL: a
   // screening can offer two, and they are not stable.
   const s = find("wendigo|film_at_lincoln_center");
@@ -219,7 +221,7 @@ Deno.test("identifies an item by film, theater and day", () => {
   );
 });
 
-Deno.test("emits guid isPermaLink=false, because the link is not the id", async () => {
+test("emits guid isPermaLink=false, because the link is not the id", async () => {
   const body = await feed();
   assert(
     body.includes(
@@ -233,7 +235,7 @@ Deno.test("emits guid isPermaLink=false, because the link is not the id", async 
   );
 });
 
-Deno.test("dates every item to the fetch, not to the screening", async () => {
+test("dates every item to the fetch, not to the screening", async () => {
   // These are future events. Dating them by showtime would sort the furthest
   // off to the top and reshuffle the feed as the calendar rolls; `now` means
   // "when this appeared in the listing", which is what FreshRSS stores on first
@@ -244,7 +246,7 @@ Deno.test("dates every item to the fetch, not to the screening", async () => {
   assertEquals(dates[0], NOW.getTime(), "and it is the fetch time");
 });
 
-Deno.test("orders items soonest first", async () => {
+test("orders items soonest first", async () => {
   // Every item shares a pubDate, so the order they are written in is the order
   // a reader shows them in.
   // Only item titles are CDATA-wrapped; the channel's is entity-escaped, so
@@ -263,7 +265,7 @@ Deno.test("orders items soonest first", async () => {
   );
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?city=la&date=2026-01-01");
   assert(
     body.includes(`href="${FEED_URL}" rel="self"`),
@@ -272,7 +274,7 @@ Deno.test("self-link is canonical, ignoring junk query params", async () => {
   assertEquals((body.match(/<item>/g) ?? []).length, 44, "params ignored");
 });
 
-Deno.test("names the image media type rather than letting it be guessed", async () => {
+test("names the image media type rather than letting it be guessed", async () => {
   const body = await feed();
   assert(body.includes('type="image/jpeg"'), "jpeg, not the invalid image/jpg");
   assert(!body.includes('type="image/jpg"'), "no bogus media type");
@@ -296,7 +298,7 @@ const SAMPLE: Screening = {
   link: "https://tickets.example/1",
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -326,12 +328,11 @@ Deno.test("renders XML-safe output", () => {
     items: [{ ...SAMPLE, film: `Bell${bell}here` }],
     now: NOW,
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("omits optional elements when the screening lacks them", () => {
+test("omits optional elements when the screening lacks them", () => {
   const bare: Screening = {
     ...SAMPLE,
     times: [],

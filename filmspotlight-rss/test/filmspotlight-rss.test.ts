@@ -6,9 +6,11 @@
  *
  * The counts below move whenever it is recaptured — this is a rolling calendar.
  *
- * Run: deno test --allow-read test/filmspotlight-rss.test.ts
+ * Run: node --test test/filmspotlight-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   type Event,
@@ -19,8 +21,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const fixture = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./filmspotlight-future.json", import.meta.url),
+  await readFile(
+    new URL("./filmspotlight-future.json", import.meta.url), "utf8",
   ),
 );
 const events = extractEvents(fixture);
@@ -28,7 +30,7 @@ const event = (id: number) => events.find((e) => e.id === id)!;
 
 const FEED_URL = "https://feed.val.run/filmspotlight";
 
-Deno.test("reads events matching the allowed theaters and only those", () => {
+test("reads events matching the allowed theaters and only those", () => {
   assertEquals(fixture.length, 114, "records the API returned");
   assertEquals(events.length, 35, "events read at allowed theaters");
   assert(events.every((e) => e.title), "every event has a title");
@@ -41,7 +43,7 @@ Deno.test("reads events matching the allowed theaters and only those", () => {
   );
 });
 
-Deno.test("theater filter matches all requested theaters and excludes others", () => {
+test("theater filter matches all requested theaters and excludes others", () => {
   const allowed = [
     "AMC Empire 25",
     "AMC Lincoln Square 13",
@@ -94,7 +96,7 @@ Deno.test("theater filter matches all requested theaters and excludes others", (
   }
 });
 
-Deno.test("extractEvents drops events from non-allowed theaters", () => {
+test("extractEvents drops events from non-allowed theaters", () => {
   const records = [
     {
       id: 1,
@@ -119,7 +121,7 @@ Deno.test("extractEvents drops events from non-allowed theaters", () => {
   assertEquals(extracted.map((e) => e.title), ["At IFC"]);
 });
 
-Deno.test("reads every field of a known event", () => {
+test("reads every field of a known event", () => {
   const e = event(4087);
   assertEquals(e.title, "Wendigo with Larry Fessenden (Director)");
   assertEquals(e.location, "Film at Lincoln Center");
@@ -136,7 +138,7 @@ Deno.test("reads every field of a known event", () => {
   );
 });
 
-Deno.test("dates an item by when it was announced, not when it screens", () => {
+test("dates an item by when it was announced, not when it screens", () => {
   // The heart of this feed. Dating by screening would sort the furthest-off
   // event to the top and reshuffle the whole feed as the calendar rolls;
   // created_at is Film Spotlight's own record of first seeing the event.
@@ -157,14 +159,14 @@ Deno.test("dates an item by when it was announced, not when it screens", () => {
   );
 });
 
-Deno.test("orders items newest announcement first", async () => {
+test("orders items newest announcement first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)]
     .map((m) => Date.parse(m[1]));
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending");
   assertEquals(dates.length, events.length, "one date per event");
 });
 
-Deno.test("prefers the event blurb but falls back to the film synopsis", () => {
+test("prefers the event blurb but falls back to the film synopsis", () => {
   const both = {
     id: 1,
     event_title: "T",
@@ -182,7 +184,7 @@ Deno.test("prefers the event blurb but falls back to the film synopsis", () => {
   );
 });
 
-Deno.test("carries no hit count", () => {
+test("carries no hit count", () => {
   // Excluded on purpose: it moves with every page view, and a changed item is
   // one FreshRSS rewrites — churn for a number no reader asked for.
   assert(
@@ -199,7 +201,7 @@ Deno.test("carries no hit count", () => {
   assert(!/hit[_ ]?count/i.test(xml), "and none of it reaches the feed");
 });
 
-Deno.test("lists every screening of a multi-night event", () => {
+test("lists every screening of a multi-night event", () => {
   const multi = events.find((e) => e.screenings.length > 1)!;
   assert(multi.screenings.length > 1, "found one");
   const xml = renderRss({
@@ -214,7 +216,7 @@ Deno.test("lists every screening of a multi-night event", () => {
   }
 });
 
-Deno.test("takes the poster when there is no social image", () => {
+test("takes the poster when there is no social image", () => {
   const posterOnly = {
     id: 1,
     event_title: "T",
@@ -234,7 +236,7 @@ Deno.test("takes the poster when there is no social image", () => {
   );
 });
 
-Deno.test("names the image media type rather than letting it be guessed", () => {
+test("names the image media type rather than letting it be guessed", () => {
   const withImage = events.filter((e) => e.image);
   assertEquals(withImage.length, 27, "events with an image");
   assert(
@@ -247,7 +249,7 @@ Deno.test("names the image media type rather than letting it be guessed", () => 
   );
 });
 
-Deno.test("drops an event with no screening left", () => {
+test("drops an event with no screening left", () => {
   // This is the shape a past event takes once its screening rows are purged.
   // The endpoint should never return one, but the date-bounded API this val
   // used to read did, and those items rendered with no date anywhere in them.
@@ -270,7 +272,7 @@ Deno.test("drops an event with no screening left", () => {
   );
 });
 
-Deno.test("skips records that are not events", () => {
+test("skips records that are not events", () => {
   const withHoles = [
     null,
     {
@@ -287,7 +289,7 @@ Deno.test("skips records that are not events", () => {
   assertEquals(extractEvents(withHoles).map((e) => e.title), ["Kept"]);
 });
 
-Deno.test("survives input that is not the API we asked for", () => {
+test("survives input that is not the API we asked for", () => {
   assertEquals(extractEvents([]).length, 0, "empty");
   assertEquals(extractEvents(null).length, 0, "null");
   assertEquals(extractEvents({ events: [] }).length, 0, "not an array");
@@ -308,7 +310,7 @@ Deno.test("survives input that is not the API we asked for", () => {
 const feed = (query = "") =>
   buildFeed(events, new URL(`${FEED_URL}${query}`)).text();
 
-Deno.test("serves the listing", async () => {
+test("serves the listing", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 35, "every event");
   assert(body.includes("<title>NYC Film Spotlight</title>"), "channel title");
@@ -319,7 +321,7 @@ Deno.test("serves the listing", async () => {
   );
 });
 
-Deno.test("links to the event page, not the ticket vendor", async () => {
+test("links to the event page, not the ticket vendor", async () => {
   const body = await feed();
   assert(
     body.includes(
@@ -337,7 +339,7 @@ Deno.test("links to the event page, not the ticket vendor", async () => {
   );
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?start=2026-01-01&limit=5");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 35, "params ignored");
@@ -356,7 +358,7 @@ const SAMPLE: Event = {
   imageType: "image/jpeg",
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -385,12 +387,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -402,7 +403,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the event lacks them", () => {
+test("omits optional elements when the event lacks them", () => {
   const bare: Event = {
     ...SAMPLE,
     title: "Bare",

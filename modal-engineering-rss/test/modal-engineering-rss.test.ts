@@ -7,9 +7,11 @@
  *
  *   curl -s https://modal.com/blog/__data.json -o modal-blog-data.json
  *
- * Run: deno test --allow-read test/modal-engineering-rss.test.ts
+ * Run: node --test test/modal-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   devalue,
@@ -20,7 +22,7 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(new URL("./modal-blog-data.json", import.meta.url)),
+  await readFile(new URL("./modal-blog-data.json", import.meta.url), "utf8"),
 );
 const posts = extractPosts(raw);
 const post = (slug: string) => posts.find((p) => p.slug === slug)!;
@@ -29,7 +31,7 @@ const FEED_URL = "https://feed.val.run/modal";
 const feed = (query = "") =>
   buildFeed(posts, new URL(`${FEED_URL}${query}`)).text();
 
-Deno.test("reads the Engineering posts and only those", () => {
+test("reads the Engineering posts and only those", () => {
   assertEquals(posts.length, 30, "Engineering posts");
   assert(posts.every((p) => p.category === "Engineering"), "one category");
   assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
@@ -43,10 +45,9 @@ Deno.test("reads the Engineering posts and only those", () => {
   assert(posts.every((p) => p.image), "every post has an image");
 });
 
-Deno.test("filters a listing that holds every category", () => {
+test("filters a listing that holds every category", () => {
   // The category filter runs in the browser, so the payload is the whole blog
   // and the val has to do the narrowing itself.
-  // deno-lint-ignore no-explicit-any
   const all = (devalue(
     (raw.nodes as any[]).find((n) => n?.data?.length > 100).data,
   ) as any).posts;
@@ -59,7 +60,7 @@ Deno.test("filters a listing that holds every category", () => {
   assert(categories.has("News"), "including ones the feed must exclude");
 });
 
-Deno.test("reads every field of a known post", () => {
+test("reads every field of a known post", () => {
   const p = post("bringing-serverless-functions-closer-to-the-speed-of-wire");
   assertEquals(
     p.title,
@@ -73,7 +74,7 @@ Deno.test("reads every field of a known post", () => {
   assert(p.description.startsWith("Modal’s Function Call data path"), "desc");
 });
 
-Deno.test("reads both date shapes the listing stores", () => {
+test("reads both date shapes the listing stores", () => {
   // Some records carry a bare "2026-08-04" and others a Z-suffixed instant.
   // Date.parse reads both as UTC; a naive datetime would have been read as
   // local time and shifted by however many hours the val happened to run at.
@@ -89,7 +90,7 @@ Deno.test("reads both date shapes the listing stores", () => {
   );
 });
 
-Deno.test("decodes SvelteKit's devalue encoding", () => {
+test("decodes SvelteKit's devalue encoding", () => {
   // Index 0 is the root and every integer elsewhere is an index into the same
   // array; unlike the turbo-stream the Shopify val reads, object keys here are
   // literal and only values are indices.
@@ -105,19 +106,17 @@ Deno.test("decodes SvelteKit's devalue encoding", () => {
   );
 });
 
-Deno.test("resolves a shared index to one object rather than a copy", () => {
+test("resolves a shared index to one object rather than a copy", () => {
   // The payload references the same string and subtree from many places; the
   // decoder memoises, which is what keeps it linear on a few thousand entries.
-  // deno-lint-ignore no-explicit-any
   const out = devalue([{ left: 1, right: 1 }, { n: 2 }, 42]) as any;
   assertEquals(out.left, { n: 42 }, "decoded once");
   assert(out.left === out.right, "and both references point at it");
 });
 
-Deno.test("maps devalue's negative constants", () => {
+test("maps devalue's negative constants", () => {
   // -1 is undefined and -3 NaN; treating either as an index would read the
   // wrong end of the array.
-  // deno-lint-ignore no-explicit-any
   const out = devalue([
     { nothing: -1, notANumber: -3, real: 1 },
     "here",
@@ -127,7 +126,7 @@ Deno.test("maps devalue's negative constants", () => {
   assertEquals(out.real, "here", "and ordinary indices still work");
 });
 
-Deno.test("finds the posts by shape, not by node position", () => {
+test("finds the posts by shape, not by node position", () => {
   // Which node holds the /blog loader data depends on the layout tree, so the
   // val looks for the node with a `posts` array instead of indexing in.
   const moved = {
@@ -162,7 +161,7 @@ Deno.test("finds the posts by shape, not by node position", () => {
   assertEquals(extractPosts(moved).map((p) => p.slug), ["s"]);
 });
 
-Deno.test("leaves an unpublished post out", () => {
+test("leaves an unpublished post out", () => {
   const record = (published: boolean) => ({
     nodes: [{
       type: "data",
@@ -188,7 +187,7 @@ Deno.test("leaves an unpublished post out", () => {
   assertEquals(extractPosts(record(false)).length, 0, "unpublished");
 });
 
-Deno.test("resolves a site-relative image against modal.com", async () => {
+test("resolves a site-relative image against modal.com", async () => {
   const payload = {
     nodes: [{
       type: "data",
@@ -216,7 +215,7 @@ Deno.test("resolves a site-relative image against modal.com", async () => {
   assert((await res.text()).includes("nvidia-vera.webp"), "enclosure kept");
 });
 
-Deno.test("survives input that is not the payload we asked for", () => {
+test("survives input that is not the payload we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({}).length, 0, "no nodes");
   assertEquals(extractPosts({ nodes: [] }).length, 0, "empty");
@@ -224,7 +223,7 @@ Deno.test("survives input that is not the payload we asked for", () => {
   assertEquals(devalue([]), null, "an empty table decodes to null");
 });
 
-Deno.test("serves the category", async () => {
+test("serves the category", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 30, "every post");
   assert(body.includes("<title>Modal — Engineering</title>"), "channel title");
@@ -246,24 +245,24 @@ Deno.test("serves the category", async () => {
   );
 });
 
-Deno.test("carries the read length in the body", async () => {
+test("carries the read length in the body", async () => {
   const body = await feed();
   assert(body.includes("· 6 min read]]>"), "appended after the description");
 });
 
-Deno.test("credits no author, because the listing names none", async () => {
+test("credits no author, because the listing names none", async () => {
   const body = await feed();
   assert(!body.includes("<author>"), "no invented byline");
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?category=News&limit=5");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 30, "params ignored");
@@ -281,7 +280,7 @@ const SAMPLE: Post = {
   minutes: 6,
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -310,12 +309,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -327,7 +325,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

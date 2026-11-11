@@ -231,7 +231,6 @@ function str(v: unknown): string {
  * Strips characters illegal in XML 1.0 (control characters).
  */
 export function clean(s: string): string {
-  // deno-lint-ignore no-control-regex
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 

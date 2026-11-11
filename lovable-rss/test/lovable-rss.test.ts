@@ -4,9 +4,11 @@
  *
  *   curl -sL https://lovable.dev/blog/rss.xml -o lovable-blog-rss.xml
  *
- * Run: deno test --allow-read test/lovable-rss.test.ts
+ * Run: node --test test/lovable-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -16,13 +18,13 @@ import {
 } from "../lovable-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const xml = await Deno.readTextFile(
-  new URL("./lovable-blog-rss.xml", import.meta.url),
+const xml = await readFile(
+  new URL("./lovable-blog-rss.xml", import.meta.url), "utf8",
 );
 const posts = extractPosts(xml);
 const inside = selectPosts(posts);
 
-Deno.test("reads every item in Lovable's feed", () => {
+test("reads every item in Lovable's feed", () => {
   assertEquals(posts.length, 147, "item count");
   assertEquals(
     posts.length,
@@ -37,7 +39,7 @@ Deno.test("reads every item in Lovable's feed", () => {
   );
 });
 
-Deno.test("filters to the Inside Lovable category", () => {
+test("filters to the Inside Lovable category", () => {
   assertEquals(inside.length, 28, "Inside Lovable count");
   assert(
     inside.every((p) => p.category.toLowerCase() === "inside lovable"),
@@ -45,7 +47,7 @@ Deno.test("filters to the Inside Lovable category", () => {
   );
 });
 
-Deno.test("categories are spelled inconsistently at the source", () => {
+test("categories are spelled inconsistently at the source", () => {
   // Why matching normalises rather than comparing literally: the same category
   // is written two ways, and an exact match would silently drop one spelling.
   const byNormalised = new Map<string, Set<string>>();
@@ -61,7 +63,7 @@ Deno.test("categories are spelled inconsistently at the source", () => {
   );
 });
 
-Deno.test("reads every field of a known item", () => {
+test("reads every field of a known item", () => {
   const p = posts.find((p) => p.link.endsWith("/blog/series-c"))!;
   assertEquals(
     p.title,
@@ -74,7 +76,7 @@ Deno.test("reads every field of a known item", () => {
   assert(p.description.startsWith("Lovable has raised $400 million"), "desc");
 });
 
-Deno.test("decodes entities the source escapes", () => {
+test("decodes entities the source escapes", () => {
   // Titles arrive with &amp; and &#39; in them; nothing should reach the feed
   // still encoded.
   assert(
@@ -83,7 +85,7 @@ Deno.test("decodes entities the source escapes", () => {
   );
 });
 
-Deno.test("keeps every field inside its own item", () => {
+test("keeps every field inside its own item", () => {
   const synthetic = `<rss><channel>
     <item><title>First</title><link>https://lovable.dev/blog/a</link>
       <category>Inside Lovable</category><dc:creator>Ada</dc:creator>
@@ -106,7 +108,7 @@ Deno.test("keeps every field inside its own item", () => {
   assertEquals(bare.ts, null, "and undated");
 });
 
-Deno.test("survives input that is not the feed we asked for", () => {
+test("survives input that is not the feed we asked for", () => {
   assertEquals(extractPosts("").length, 0, "empty");
   assertEquals(extractPosts("<html>nope</html>").length, 0, "not a feed");
   assertEquals(
@@ -119,7 +121,7 @@ Deno.test("survives input that is not the feed we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/lovable${query}`)).text();
 
-Deno.test("serves the Inside Lovable category", async () => {
+test("serves the Inside Lovable category", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 28, "every matching post");
   assert(
@@ -139,20 +141,20 @@ Deno.test("serves the Inside Lovable category", async () => {
   assert(body.includes("<category>Inside Lovable</category>"), "category");
 });
 
-Deno.test("carries no images, because the source feed has none", () => {
+test("carries no images, because the source feed has none", () => {
   // A deliberate trade: reading Lovable's own feed means no thumbnails at all.
   assert(!xml.includes("<enclosure"), "source has no enclosure");
   assert(!xml.includes("<media:"), "source has no media:content");
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?category=announcements&limit=5&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/lovable" rel="self"'),
@@ -172,7 +174,7 @@ const SAMPLE_ITEM: Post = {
   category: "Inside Lovable",
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -201,12 +203,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -218,7 +219,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the item lacks them", () => {
+test("omits optional elements when the item lacks them", () => {
   const bare: Post = {
     link: "https://lovable.dev/blog/bare",
     title: "Bare",

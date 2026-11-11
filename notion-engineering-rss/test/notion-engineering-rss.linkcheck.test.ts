@@ -1,7 +1,7 @@
 /**
  * Live link check for the Notion feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/notion-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/notion-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts, postUrl } from "../notion-engineering-rss.ts";

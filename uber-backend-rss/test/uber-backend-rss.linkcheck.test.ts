@@ -1,7 +1,7 @@
 /**
  * Live link check for the Uber Backend feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/uber-backend-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/uber-backend-rss.linkcheck.test.ts
  */
 
 import {

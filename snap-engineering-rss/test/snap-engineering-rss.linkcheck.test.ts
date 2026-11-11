@@ -1,7 +1,7 @@
 /**
  * Live link check for the Snap feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/snap-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/snap-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts, postUrl } from "../snap-engineering-rss.ts";

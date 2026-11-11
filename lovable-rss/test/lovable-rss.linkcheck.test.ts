@@ -1,7 +1,7 @@
 /**
  * Live link check for the Lovable feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/lovable-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/lovable-rss.linkcheck.test.ts
  */
 
 import { extractPosts, selectPosts } from "../lovable-rss.ts";

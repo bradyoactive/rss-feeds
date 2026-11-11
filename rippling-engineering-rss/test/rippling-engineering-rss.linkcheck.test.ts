@@ -1,7 +1,7 @@
 /**
  * Live link check for the Rippling feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/rippling-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/rippling-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../rippling-engineering-rss.ts";

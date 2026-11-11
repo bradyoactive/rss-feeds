@@ -1,0 +1,10 @@
+# Fixtures are byte-for-byte captures of someone else's markup. Reformatting
+# them rewrites the exact payload the scrapers are written against and silently
+# empties every feed's test, so keep Prettier away from them.
+*/test/*.html
+*/test/*.json
+*/test/*.xml
+
+package-lock.json
+node_modules/
+.wrangler/

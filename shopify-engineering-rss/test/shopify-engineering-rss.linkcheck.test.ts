@@ -1,7 +1,7 @@
 /**
  * Live link check for the Shopify Engineering feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/shopify-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/shopify-engineering-rss.linkcheck.test.ts
  */
 
 import {

@@ -13,9 +13,11 @@
  *          "sortKey":"PUBLISHED_AT","sortOrder":"DESC"}' \
  *     -o uber-newsroom-backend.json
  *
- * Run: deno test --allow-read test/uber-backend-rss.test.ts
+ * Run: node --test test/uber-backend-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   categoryId,
@@ -29,7 +31,7 @@ import { assert, assertEquals } from "../../common/assert.ts";
 
 /** The RPC wraps every reply as { status, data }; `rpc` unwraps it. */
 const read = async (name: string) =>
-  JSON.parse(await Deno.readTextFile(new URL(`./${name}`, import.meta.url)));
+  JSON.parse(await readFile(new URL(`./${name}`, import.meta.url), "utf8"));
 
 const rawCategories = await read("uber-newsroom-categories.json");
 const rawPosts = await read("uber-newsroom-backend.json");
@@ -43,7 +45,7 @@ const FEED_URL = "https://feed.val.run/uber";
 const feed = (query = "") =>
   buildFeed(posts, new URL(`${FEED_URL}${query}`)).text();
 
-Deno.test("reads every post the category holds", () => {
+test("reads every post the category holds", () => {
   assertEquals(rawPosts.data.totalCount, 120, "posts the API reports");
   assertEquals(posts.length, 120, "posts read");
   assert(posts.every((p) => p.url && p.title), "every post has a URL/title");
@@ -57,7 +59,7 @@ Deno.test("reads every post the category holds", () => {
   assert(posts.every((p) => p.categories.includes("Backend")), "in-category");
 });
 
-Deno.test("one request covers the category with room to spare", () => {
+test("one request covers the category with room to spare", () => {
   // The val asks for 500. If Backend ever outgrows that, the count read here
   // stops matching what the API says it holds — which is the point of checking
   // both rather than trusting the array's length.
@@ -72,7 +74,7 @@ Deno.test("one request covers the category with room to spare", () => {
   );
 });
 
-Deno.test("resolves the category by slug, not by a pinned id", () => {
+test("resolves the category by slug, not by a pinned id", () => {
   assertEquals(categories.length, 70, "categories in the tree");
   assertEquals(
     categoryId(categories, "engineering/backend"),
@@ -82,7 +84,7 @@ Deno.test("resolves the category by slug, not by a pinned id", () => {
   assertEquals(categoryId(categories, "engineering/no-such"), "", "unknown");
 });
 
-Deno.test("looks only in the blog namespace", () => {
+test("looks only in the blog namespace", () => {
   // The same call answers for the newsroom and legal trees as well, and slugs
   // are only unique within one namespace.
   const spaces = new Set(categories.map((c) => c.namespace));
@@ -108,7 +110,7 @@ Deno.test("looks only in the blog namespace", () => {
   );
 });
 
-Deno.test("reads every field of a known post", () => {
+test("reads every field of a known post", () => {
   const p = post("query-gpt");
   assertEquals(
     p.title,
@@ -125,7 +127,7 @@ Deno.test("reads every field of a known post", () => {
   assert(p.image.startsWith("https://tb-static.uber.com/"), "image");
 });
 
-Deno.test("prefers `title` over `ogTitle`", () => {
+test("prefers `title` over `ogTitle`", () => {
   // The two differ on a dozen posts. The cards render `title`, and it is the
   // better-kept of the pair — ogTitle still says "QueryGPT - … using Generative
   // AI" with a hyphen and lower-case "using".
@@ -140,7 +142,7 @@ Deno.test("prefers `title` over `ogTitle`", () => {
   );
 });
 
-Deno.test("collapses a double space the rendered page would have folded", () => {
+test("collapses a double space the rendered page would have folded", () => {
   // Stored as "Upgrading Uber’s MySQL Fleet  to version 8.0".
   assertEquals(
     post("upgrading-ubers-mysql-fleet").title,
@@ -148,7 +150,7 @@ Deno.test("collapses a double space the rendered page would have folded", () => 
   );
 });
 
-Deno.test("turns category ids into names, and drops ones it cannot", () => {
+test("turns category ids into names, and drops ones it cannot", () => {
   // A bare UUID in <category> would be worse than no category at all.
   const entry = {
     fullURL: "www.uber.com/us/en/blog/x/",
@@ -166,7 +168,7 @@ Deno.test("turns category ids into names, and drops ones it cannot", () => {
   );
 });
 
-Deno.test("gives every post an absolute link", () => {
+test("gives every post an absolute link", () => {
   // `fullURL` comes back scheme-less.
   assert(
     rawPosts.data.relatedPages.every((r: { fullURL: string }) =>
@@ -187,7 +189,7 @@ Deno.test("gives every post an absolute link", () => {
   );
 });
 
-Deno.test("survives input that is not the response we asked for", () => {
+test("survives input that is not the response we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ relatedPages: [] }).length, 0, "empty");
   assertEquals(extractPosts([]).length, 0, "not a response body");
@@ -205,7 +207,7 @@ Deno.test("survives input that is not the response we asked for", () => {
   );
 });
 
-Deno.test("serves the category", async () => {
+test("serves the category", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 120, "every post");
   assert(
@@ -232,7 +234,7 @@ Deno.test("serves the category", async () => {
   );
 });
 
-Deno.test("names every image's media type", async () => {
+test("names every image's media type", async () => {
   const body = await feed();
   assert(!body.includes('type="image/jpg"'), "no invalid image/jpg");
   assert(posts.every((p) => p.imageType), "the API's URLs all carry one");
@@ -243,7 +245,7 @@ Deno.test("names every image's media type", async () => {
   );
 });
 
-Deno.test("carries no description and no byline", async () => {
+test("carries no description and no byline", async () => {
   // Neither exists anywhere in the newsroom API, and the site's own cards print
   // neither. Inventing one would be worse than leaving it out.
   const body = await feed();
@@ -255,7 +257,7 @@ Deno.test("carries no description and no byline", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
@@ -263,7 +265,7 @@ Deno.test("orders items newest first", async () => {
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("dates by publication, not by last edit", async () => {
+test("dates by publication, not by last edit", async () => {
   // Sorting on UPDATED_AT — which the site's *featured* rail does — puts a 2021
   // Kafka post at the top, because a bulk re-save touched it this month.
   const kafka = post("kafka-async-queuing-with-consumer-proxy");
@@ -282,7 +284,7 @@ Deno.test("dates by publication, not by last edit", async () => {
   );
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?category=Mobile&limit=5");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 120, "params ignored");
@@ -298,7 +300,7 @@ const SAMPLE: Post = {
   categories: ["Backend", "Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -327,12 +329,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -344,7 +345,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     url: "https://www.uber.com/us/en/blog/bare/",
     title: "Bare",

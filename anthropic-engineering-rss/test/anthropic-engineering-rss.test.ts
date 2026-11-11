@@ -7,9 +7,11 @@
  *     "https://www.anthropic.com/engineering" \
  *     > test/anthropic-engineering.html
  *
- * Run: deno test --allow-read test/anthropic-engineering-rss.test.ts
+ * Run: node --test test/anthropic-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../anthropic-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./anthropic-engineering.html", import.meta.url),
+const html = await readFile(
+  new URL("./anthropic-engineering.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 24, "post count");
   assert(
     posts.every((p) => p.title && p.slug),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -53,7 +55,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("extractPayload recovers dates and summaries from the RSC stream", () => {
+test("extractPayload recovers dates and summaries from the RSC stream", () => {
   const payload = extractPayload(html);
   assertEquals(
     payload.get("redesigning-source-control")?.date,
@@ -67,7 +69,7 @@ Deno.test("extractPayload recovers dates and summaries from the RSC stream", () 
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = bySlug("redesigning-source-control")!;
   assert(p, "post exists");
   assertEquals(
@@ -90,14 +92,14 @@ Deno.test("reads a known post's fields accurately", () => {
   );
 });
 
-Deno.test("takes the image media type from the CDN's fm param", () => {
+test("takes the image media type from the CDN's fm param", () => {
   const p = bySlug("redesigning-source-control")!;
   assert(p.image.startsWith("https://assets.claude.com/"), "card image");
   assert(!p.image.includes("&amp;"), "entities in src decoded");
   assertEquals(p.imageType, "image/webp", "fm=webp wins over .jpg");
 });
 
-Deno.test("decodes html entities in titles", () => {
+test("decodes html entities in titles", () => {
   const [p] = extractPosts(
     '<article><time>Mar 20, 2025</time><h3><a href="/research/claude-think-tool">The &quot;think&quot; tool</a></h3></article>',
   );
@@ -105,7 +107,7 @@ Deno.test("decodes html entities in titles", () => {
   assertEquals(p.ts, Date.UTC(2025, 2, 20), "printed date read as UTC");
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-10-13"),
     Date.UTC(2026, 9, 13, 0, 0, 0),
@@ -120,7 +122,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("postUrl prepends SITE domain appropriately", () => {
+test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("test-slug"),
     "https://www.anthropic.com/research/test-slug",
@@ -135,7 +137,7 @@ Deno.test("postUrl prepends SITE domain appropriately", () => {
   );
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/anthropic"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -145,7 +147,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
+test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
   const sample: Post[] = [
     {
       slug: "test-slug",
@@ -185,12 +187,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   assert(xml.includes('type="image/svg+xml"'), "enclosure states media type");
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if article cards are missing", () => {
+test("throws error if article cards are missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No articles here</body></html>");

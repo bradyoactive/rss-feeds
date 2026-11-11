@@ -1,7 +1,7 @@
 /**
  * Live link check for the LinkedIn feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/linkedin-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/linkedin-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts } from "../linkedin-engineering-rss.ts";

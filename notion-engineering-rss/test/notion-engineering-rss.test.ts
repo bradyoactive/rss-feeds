@@ -7,9 +7,11 @@
  *     "https://www.notion.com/blog/topic/tech" \
  *     > test/notion-engineering-tech.html
  *
- * Run: deno test --allow-read test/notion-engineering-rss.test.ts
+ * Run: node --test test/notion-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../notion-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./notion-engineering-tech.html", import.meta.url),
+const html = await readFile(
+  new URL("./notion-engineering-tech.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 10, "post count");
   assert(
     posts.every((p) => p.title && p.slug),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -53,7 +55,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("every post has an image and a valid media type", () => {
+test("every post has an image and a valid media type", () => {
   assertEquals(
     posts.filter((p) => !p.image).length,
     0,
@@ -71,7 +73,7 @@ Deno.test("every post has an image and a valid media type", () => {
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = bySlug("how-notion-handles-concurrent-editing-with-crdts")!;
   assert(p, "post exists");
   assertEquals(
@@ -97,7 +99,7 @@ Deno.test("reads a known post's fields accurately", () => {
   );
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-10-14T17:38:40.293Z"),
     Date.parse("2026-10-14T17:38:40.293Z"),
@@ -111,7 +113,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("postUrl prepends SITE domain appropriately", () => {
+test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("test-post"),
     "https://www.notion.com/blog/test-post",
@@ -126,13 +128,13 @@ Deno.test("postUrl prepends SITE domain appropriately", () => {
   );
 });
 
-Deno.test("mediaType determines MIME type from extension", () => {
+test("mediaType determines MIME type from extension", () => {
   assertEquals(mediaType("https://example.com/photo.png"), "image/png");
   assertEquals(mediaType("https://example.com/photo.webp"), "image/webp");
   assertEquals(mediaType("https://example.com/photo.jpg"), "image/jpeg");
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/notion"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -142,7 +144,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
+test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () => {
   const sample: Post[] = [
     {
       slug: "test-post",
@@ -184,12 +186,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks and enclosures", () 
   );
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if __NEXT_DATA__ is missing", () => {
+test("throws error if __NEXT_DATA__ is missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No next data here</body></html>");

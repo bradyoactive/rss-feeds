@@ -7,9 +7,11 @@
  *     "https://stripe.dev/blog/topic/engineering" \
  *     > test/stripe-engineering.html
  *
- * Run: deno test --allow-read test/stripe-engineering-rss.test.ts
+ * Run: node --test test/stripe-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -21,13 +23,13 @@ import {
 } from "../stripe-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./stripe-engineering.html", import.meta.url),
+const html = await readFile(
+  new URL("./stripe-engineering.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("extracts only Engineering-tagged posts from the fixture", () => {
+test("extracts only Engineering-tagged posts from the fixture", () => {
   assertEquals(posts.length, 26, "post count");
   assert(
     posts.every((p) => p.categories.includes("Engineering")),
@@ -48,7 +50,7 @@ Deno.test("extracts only Engineering-tagged posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -60,7 +62,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = bySlug("modern-java-at-stripe-language-upgrades-as-a-service")!;
   assert(p, "post exists");
   assertEquals(
@@ -84,7 +86,7 @@ Deno.test("reads a known post's fields accurately", () => {
   );
 });
 
-Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
+test("parseDate handles ISO, naive, date-only, and invalid strings", () => {
   assertEquals(
     parseDate("2026-10-13"),
     Date.UTC(2026, 9, 13, 0, 0, 0),
@@ -98,7 +100,7 @@ Deno.test("parseDate handles ISO, naive, date-only, and invalid strings", () => 
   assertEquals(parseDate(null), null);
 });
 
-Deno.test("postUrl prepends SITE domain appropriately", () => {
+test("postUrl prepends SITE domain appropriately", () => {
   assertEquals(
     postUrl("test-slug"),
     "https://stripe.dev/blog/test-slug",
@@ -113,7 +115,7 @@ Deno.test("postUrl prepends SITE domain appropriately", () => {
   );
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/stripe"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -123,7 +125,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks", () => {
+test("renderRss produces valid RSS 2.0 with permalinks", () => {
   const sample: Post[] = [
     {
       slug: "test-slug",
@@ -158,12 +160,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks", () => {
   assert(xml.includes("<category>Engineering</category>"), "category");
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if __NEXT_DATA__ is missing", () => {
+test("throws error if __NEXT_DATA__ is missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No next data here</body></html>");

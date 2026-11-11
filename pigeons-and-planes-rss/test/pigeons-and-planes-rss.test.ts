@@ -16,9 +16,11 @@
  *       }' \
  *     > test/pigeons-sanity-posts.json
  *
- * Run: deno test --allow-read test/pigeons-and-planes-rss.test.ts
+ * Run: node --test test/pigeons-and-planes-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -29,14 +31,14 @@ import { assert, assertEquals } from "../../common/assert.ts";
 import { channelLink } from "../../common/linkcheck.ts";
 
 const payload = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./pigeons-sanity-posts.json", import.meta.url),
+  await readFile(
+    new URL("./pigeons-sanity-posts.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(payload);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("reads the whole page from one query", () => {
+test("reads the whole page from one query", () => {
   assertEquals(posts.length, 20, "post count");
   assertEquals(
     posts.length,
@@ -51,7 +53,7 @@ Deno.test("reads the whole page from one query", () => {
   );
 });
 
-Deno.test("every post arrives with the fields the feed renders", () => {
+test("every post arrives with the fields the feed renders", () => {
   for (const field of ["description", "image", "imageType"] as const) {
     assertEquals(
       posts.filter((p) => !p[field]).length,
@@ -72,7 +74,7 @@ Deno.test("every post arrives with the fields the feed renders", () => {
   );
 });
 
-Deno.test("reads a known post's fields", () => {
+test("reads a known post's fields", () => {
   const p = bySlug("rostam-taste-in-music")!;
   assertEquals(
     p.title,
@@ -84,7 +86,7 @@ Deno.test("reads a known post's fields", () => {
   assert(p.description.startsWith("This spring"), "description");
 });
 
-Deno.test("authors are names, not undefined", () => {
+test("authors are names, not undefined", () => {
   // `authors[]->name` projects to bare strings. The version of this val that
   // read `.name` off each string put no <author> in the feed at all, for every
   // item — this is the regression that test exists for.
@@ -100,7 +102,7 @@ Deno.test("authors are names, not undefined", () => {
   );
 });
 
-Deno.test("a post with no publishedAt is kept but left undated", () => {
+test("a post with no publishedAt is kept but left undated", () => {
   // At least one live post carries publishedAt: null, and Sanity's
   // `order(publishedAt desc)` sorts it to the *front*. `new Date(null)` is the
   // epoch, so the old val dated it 1 Jan 1970 and pulled the channel's own
@@ -117,7 +119,7 @@ Deno.test("a post with no publishedAt is kept but left undated", () => {
   assertEquals(post.ts, null, "null publishedAt is not the epoch");
 });
 
-Deno.test("degrades on a row missing its optional fields", () => {
+test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts([{ slug: "bare", title: "Bare" }]);
   assertEquals(post, {
     title: "Bare",
@@ -130,7 +132,7 @@ Deno.test("degrades on a row missing its optional fields", () => {
   }, "bare post");
 });
 
-Deno.test("survives a payload that is not what we asked for", () => {
+test("survives a payload that is not what we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "no payload");
   assertEquals(extractPosts({}).length, 0, "not an array");
   assertEquals(extractPosts({ result: null }).length, 0, "null result");
@@ -149,7 +151,7 @@ Deno.test("survives a payload that is not what we asked for", () => {
   );
 });
 
-Deno.test("accepts a raw Sanity response as well as the proxy's array", () => {
+test("accepts a raw Sanity response as well as the proxy's array", () => {
   const rows = [{ slug: "s", title: "T" }];
   assertEquals(
     extractPosts(rows).length,
@@ -162,7 +164,7 @@ Deno.test("accepts a raw Sanity response as well as the proxy's array", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/pnp${query}`)).text();
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 20, "all posts");
   assert(body.includes("<title>Pigeons &amp; Planes</title>"), "channel title");
@@ -187,7 +189,7 @@ Deno.test("serves the feed", async () => {
   );
 });
 
-Deno.test("names every image's media type", async () => {
+test("names every image's media type", async () => {
   const body = await feed();
   assertEquals(
     (body.match(/<enclosure/g) ?? []).length,
@@ -202,7 +204,7 @@ Deno.test("names every image's media type", async () => {
   assert(!body.includes('type="image/jpg"'), "no bogus media type");
 });
 
-Deno.test("serves one content type, with the collection's cache window", () => {
+test("serves one content type, with the collection's cache window", () => {
   const res = buildFeed(posts, new URL("https://feed.val.run/pnp"));
   assertEquals(
     res.headers.get("content-type"),
@@ -216,14 +218,14 @@ Deno.test("serves one content type, with the collection's cache window", () => {
   );
 });
 
-Deno.test("names every byline in the feed", async () => {
+test("names every byline in the feed", async () => {
   const body = await feed();
   assert(body.includes("<author>"), "the feed has bylines at all");
   assert(body.includes("Will Schube"), "a known byline");
   assert(!body.includes("undefined"), "no undefined leaked into the feed");
 });
 
-Deno.test("the undated post carries no 1970", async () => {
+test("the undated post carries no 1970", async () => {
   const body = await feed();
   assert(!body.includes("1970"), "no epoch dates anywhere in the feed");
   assertEquals(
@@ -233,7 +235,7 @@ Deno.test("the undated post carries no 1970", async () => {
   );
 });
 
-Deno.test("undated posts sort last, not first", async () => {
+test("undated posts sort last, not first", async () => {
   const body = await feed();
   const firstItem = body.slice(body.indexOf("<item>"));
   assert(
@@ -244,7 +246,7 @@ Deno.test("undated posts sort last, not first", async () => {
   );
 });
 
-Deno.test("channel updated is the newest real post, not the epoch", async () => {
+test("channel updated is the newest real post, not the epoch", async () => {
   const body = await feed();
   const updated = /<lastBuildDate>([^<]+)<\/lastBuildDate>/.exec(body)?.[1] ??
     "";
@@ -257,7 +259,7 @@ Deno.test("channel updated is the newest real post, not the epoch", async () => 
   assert(new Date(updated).getUTCFullYear() === 2026, "not 1970");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?format=atom&utm_source=x&limit=5");
   assert(
     body.includes('href="https://feed.val.run/pnp" rel="self"'),
@@ -282,7 +284,7 @@ const SAMPLE_ITEM: Post = {
   authors: ["Ada & Grace"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -311,12 +313,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const xml = renderRss({
     title: "T",
     description: "d",
@@ -328,7 +329,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
 
-Deno.test("omits optional elements when the record lacks them", () => {
+test("omits optional elements when the record lacks them", () => {
   const bare: Post = {
     title: "Bare",
     slug: "bare",

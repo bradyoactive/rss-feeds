@@ -1,11 +1,26 @@
 /**
  * Offline tests for the parameterised Slickdeals feed.
  *
- *   deno test --allow-read test/slickdeals-search-rss.test.ts
+ *   node --test test/slickdeals-search-rss.test.ts
  */
 
-import { assert, assertEquals, assertThrows } from "jsr:@std/assert@1";
-import { XMLValidator } from "npm:fast-xml-parser@4";
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
+import {
+  deepStrictEqual as assertEquals,
+  ok as assert,
+  throws,
+} from "node:assert/strict";
+import { XMLValidator } from "fast-xml-parser";
+
+/** `fn` throws an instance of `cls` whose message contains `includes`. */
+function assertThrows(
+  fn: () => unknown,
+  cls: new (...args: never[]) => Error,
+  includes: string,
+) {
+  throws(fn, (e: unknown) => e instanceof cls && e.message.includes(includes));
+}
 
 /** True when the document parses, otherwise the parser's complaint. */
 function validate(xml: string): true | string {
@@ -28,8 +43,8 @@ import {
 } from "../slickdeals-search-rss.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./slickdeals-search.json", import.meta.url),
+  await readFile(
+    new URL("./slickdeals-search.json", import.meta.url), "utf8",
   ),
 );
 const deals = extractDeals(raw);
@@ -44,7 +59,7 @@ function opts(qs = ""): Options {
 
 /* -- parameters ----------------------------------------------------------- */
 
-Deno.test("a bare request is valid and filters nothing", () => {
+test("a bare request is valid and filters nothing", () => {
   const o = opts();
   assertEquals(o.rating, null);
   assertEquals(o.sort, "recent");
@@ -53,7 +68,7 @@ Deno.test("a bare request is valid and filters nothing", () => {
   assertEquals(title(o), "Slickdeals");
 });
 
-Deno.test("every documented parameter is read", () => {
+test("every documented parameter is read", () => {
   const o = opts(
     "q=laptop&rating=frontpage&sort=views&minVotes=10&minViews=500" +
       "&minComments=5&priceMin=20&priceMax=300&discount=40&forums=9,30" +
@@ -76,7 +91,7 @@ Deno.test("every documented parameter is read", () => {
   assertEquals(o.showStats, true);
 });
 
-Deno.test("bad values are rejected rather than silently ignored", () => {
+test("bad values are rejected rather than silently ignored", () => {
   // The whole point: Slickdeals itself silently ignores unknown filter values,
   // so a typo there widens the feed instead of failing. This val must not.
   assertThrows(() => opts("rating=firedeals"), Error, "rating must be one of");
@@ -97,7 +112,7 @@ Deno.test("bad values are rejected rather than silently ignored", () => {
   );
 });
 
-Deno.test("blank parameters are treated as absent, not as zero", () => {
+test("blank parameters are treated as absent, not as zero", () => {
   // A reader that builds the URL from a form will send empty strings, and
   // minVotes=0 would still be a filter that drops nothing but changes the title.
   const o = opts("minVotes=&priceMax=&rating=&sort=&q=&forums=");
@@ -109,16 +124,16 @@ Deno.test("blank parameters are treated as absent, not as zero", () => {
   assertEquals(describeFilters(o), "no filters");
 });
 
-Deno.test("forums accept both csv and repeated keys", () => {
+test("forums accept both csv and repeated keys", () => {
   assertEquals(opts("forums=9,30").forums, [9, 30]);
   assertEquals(opts("forums=9&forums=30").forums, [9, 30]);
 });
 
-Deno.test("prices may be written with $ and commas", () => {
+test("prices may be written with $ and commas", () => {
   assertEquals(opts("priceMax=$1,299").priceMax, 1299);
 });
 
-Deno.test("the pool defaults to the most one request returns", () => {
+test("the pool defaults to the most one request returns", () => {
   assertEquals(opts().pool, 100);
   assertEquals(opts("minViews=100").pool, 100);
   assertEquals(opts("rating=firedeal&minVotes=100").pool, 100);
@@ -129,7 +144,7 @@ Deno.test("the pool defaults to the most one request returns", () => {
 
 /* -- the request body ------------------------------------------------------ */
 
-Deno.test("only server-side filters reach the API", () => {
+test("only server-side filters reach the API", () => {
   const body = buildBody(
     opts("q=tv&rating=frontpage&discount=40&forums=9&stores=1&minViews=99"),
   );
@@ -144,12 +159,12 @@ Deno.test("only server-side filters reach the API", () => {
   assert(!("viewsCount" in body));
 });
 
-Deno.test("rating is sent as a string", () => {
+test("rating is sent as a string", () => {
   // An int 400s.
   assertEquals(typeof buildBody(opts("rating=5")).rating, "string");
 });
 
-Deno.test("a local sort is not sent to the API", () => {
+test("a local sort is not sent to the API", () => {
   // The API ignores sort=views, which would leave the pool in recency order
   // anyway — but sending it invites a future server-side meaning to silently
   // reorder the pool underneath the local sort.
@@ -158,14 +173,14 @@ Deno.test("a local sort is not sent to the API", () => {
   assertEquals(buildBody(opts("sort=relevance")).sort, "relevance");
 });
 
-Deno.test("omitted filters are omitted from the body entirely", () => {
+test("omitted filters are omitted from the body entirely", () => {
   const body = buildBody(opts());
   assertEquals(Object.keys(body).sort(), ["page", "perPage", "sort"]);
 });
 
 /* -- parsing --------------------------------------------------------------- */
 
-Deno.test("prices parse out of every shape the API returns", () => {
+test("prices parse out of every shape the API returns", () => {
   assertEquals(parsePrice("$17"), 17);
   assertEquals(parsePrice("$1,299.00"), 1299);
   assertEquals(parsePrice("$2.70"), 2.7);
@@ -178,7 +193,7 @@ Deno.test("prices parse out of every shape the API returns", () => {
   assertEquals(parsePrice("Free"), null);
 });
 
-Deno.test("the fixture parses into complete deals", () => {
+test("the fixture parses into complete deals", () => {
   assert(deals.length > 20, `only ${deals.length} deals parsed`);
   for (const d of deals) {
     assert(d.id !== "", "a deal parsed without an id");
@@ -190,14 +205,14 @@ Deno.test("the fixture parses into complete deals", () => {
   }
 });
 
-Deno.test("relative thread paths become absolute", () => {
+test("relative thread paths become absolute", () => {
   const [d] = extractDeals({
     deals: [{ threadId: 1, dealTitle: "x", dealThreadUrl: "/f/1-thing" }],
   });
   assertEquals(d.url, "https://slickdeals.net/f/1-thing");
 });
 
-Deno.test("rows without an id or a link are skipped, not half-parsed", () => {
+test("rows without an id or a link are skipped, not half-parsed", () => {
   const got = extractDeals({
     deals: [
       { threadId: 1, dealTitle: "ok", dealThreadUrl: "/f/1-a" },
@@ -208,7 +223,7 @@ Deno.test("rows without an id or a link are skipped, not half-parsed", () => {
   assertEquals(got.map((d) => d.id), ["1"]);
 });
 
-Deno.test("duplicate thread ids collapse", () => {
+test("duplicate thread ids collapse", () => {
   const got = extractDeals({
     deals: [
       { threadId: 1, dealTitle: "a", dealThreadUrl: "/f/1-a" },
@@ -218,7 +233,7 @@ Deno.test("duplicate thread ids collapse", () => {
   assertEquals(got.length, 1);
 });
 
-Deno.test("a malformed payload yields an empty list rather than throwing", () => {
+test("a malformed payload yields an empty list rather than throwing", () => {
   assertEquals(extractDeals(null), []);
   assertEquals(extractDeals({}), []);
   assertEquals(extractDeals({ deals: "nope" }), []);
@@ -226,7 +241,7 @@ Deno.test("a malformed payload yields an empty list rather than throwing", () =>
 
 /* -- filtering ------------------------------------------------------------- */
 
-Deno.test("each threshold keeps only rows at or above it", () => {
+test("each threshold keeps only rows at or above it", () => {
   for (const n of [1, 5, 50]) {
     for (const d of applyFilters(deals, opts(`minVotes=${n}`))) {
       assert(d.votes >= n, `${d.id} has ${d.votes} votes, wanted >= ${n}`);
@@ -240,11 +255,11 @@ Deno.test("each threshold keeps only rows at or above it", () => {
   }
 });
 
-Deno.test("a threshold of zero is inclusive", () => {
+test("a threshold of zero is inclusive", () => {
   assertEquals(applyFilters(deals, opts("minVotes=0")).length, deals.length);
 });
 
-Deno.test("price bounds are inclusive and drop unpriceable rows", () => {
+test("price bounds are inclusive and drop unpriceable rows", () => {
   const bounded = applyFilters(deals, opts("priceMin=10&priceMax=50"));
   for (const d of bounded) {
     assert(d.price !== null, `${d.id} has no price but passed a bound`);
@@ -258,12 +273,12 @@ Deno.test("price bounds are inclusive and drop unpriceable rows", () => {
   }
 });
 
-Deno.test("an unpriced row survives when no price bound is set", () => {
+test("an unpriced row survives when no price bound is set", () => {
   const all = applyFilters(deals, opts("limit=500"));
   assert(all.some((d) => d.price === null));
 });
 
-Deno.test("hideExpired removes expired deals, and is off by default", () => {
+test("hideExpired removes expired deals, and is off by default", () => {
   assert(deals.some((d) => d.expired), "fixture lost its expired rows");
   assert(applyFilters(deals, opts("limit=500")).some((d) => d.expired));
   assertEquals(
@@ -274,7 +289,7 @@ Deno.test("hideExpired removes expired deals, and is off by default", () => {
   );
 });
 
-Deno.test("filters compose rather than override one another", () => {
+test("filters compose rather than override one another", () => {
   const o = opts(
     "minVotes=1&minViews=1&priceMax=1000&hideExpired=true&limit=500",
   );
@@ -286,7 +301,7 @@ Deno.test("filters compose rather than override one another", () => {
 
 /* -- sorting --------------------------------------------------------------- */
 
-Deno.test("local sorts order descending by their metric", () => {
+test("local sorts order descending by their metric", () => {
   for (
     const [sort, get] of [
       ["views", (d: Deal) => d.views],
@@ -304,7 +319,7 @@ Deno.test("local sorts order descending by their metric", () => {
   }
 });
 
-Deno.test("price sorts ascend, and -price descends", () => {
+test("price sorts ascend, and -price descends", () => {
   const asc = applyFilters(deals, opts("sort=price&priceMin=0&limit=500"));
   for (let i = 1; i < asc.length; i++) {
     assert(asc[i - 1].price! <= asc[i].price!, `ascending broke at ${i}`);
@@ -315,7 +330,7 @@ Deno.test("price sorts ascend, and -price descends", () => {
   }
 });
 
-Deno.test("unpriced rows sort last, never first", () => {
+test("unpriced rows sort last, never first", () => {
   // Sorting by price without a bound keeps them in the set; treating null as 0
   // would put every one of them at the top of a cheapest-first feed.
   const asc = applyFilters(deals, opts("sort=price&limit=500"));
@@ -328,19 +343,19 @@ Deno.test("unpriced rows sort last, never first", () => {
   }
 });
 
-Deno.test("the default sort leaves the API's order alone", () => {
+test("the default sort leaves the API's order alone", () => {
   const got = applyFilters(deals, opts("limit=500"));
   assertEquals(got.map((d) => d.id), deals.map((d) => d.id));
 });
 
-Deno.test("limit caps the feed and defaults to 50", () => {
+test("limit caps the feed and defaults to 50", () => {
   assertEquals(opts().limit, 50);
   assertEquals(applyFilters(deals, opts("limit=5")).length, 5);
 });
 
 /* -- the feed -------------------------------------------------------------- */
 
-Deno.test("the feed is well-formed RSS with one item per deal", () => {
+test("the feed is well-formed RSS with one item per deal", () => {
   const o = opts("limit=5");
   const xml = buildFeed(applyFilters(deals, o), o, NOW);
   assert(xml.startsWith("<?xml"));
@@ -349,7 +364,7 @@ Deno.test("the feed is well-formed RSS with one item per deal", () => {
   assertEquals(xml.match(/<\/item>/g)?.length, 5);
 });
 
-Deno.test("items carry a link, a date and a JPEG enclosure", () => {
+test("items carry a link, a date and a JPEG enclosure", () => {
   const o = opts("limit=8");
   const picked = applyFilters(deals, o);
   const xml = buildFeed(picked, o, NOW);
@@ -362,7 +377,7 @@ Deno.test("items carry a link, a date and a JPEG enclosure", () => {
   assert(xml.includes('type="image/jpeg"'), "enclosure type not declared");
 });
 
-Deno.test("a resolved thumbnail type replaces the JPEG default", () => {
+test("a resolved thumbnail type replaces the JPEG default", () => {
   const o = opts("limit=2");
   const [png, unresolved] = applyFilters(deals, o).filter((d) => d.image);
   const xml = buildFeed(
@@ -375,7 +390,7 @@ Deno.test("a resolved thumbnail type replaces the JPEG default", () => {
   assertEquals(types, ["image/png", "image/jpeg"]);
 });
 
-Deno.test("stats are in the body by default, and can be turned off", () => {
+test("stats are in the body by default, and can be turned off", () => {
   // On by request: Brady de-dupes by link URL, so the churn is harmless. It is
   // still churn — FreshRSS hashes the body, so these rewrite nearly every entry
   // on nearly every poll.
@@ -409,7 +424,7 @@ Deno.test("stats are in the body by default, and can be turned off", () => {
 
 /* -- the date window ------------------------------------------------------- */
 
-Deno.test("relative windows resolve against the clock", () => {
+test("relative windows resolve against the clock", () => {
   assertEquals(opts("days=1").since, CLOCK - 86_400_000);
   assertEquals(opts("days=0.5").since, CLOCK - 43_200_000);
   assertEquals(opts("hours=6").since, CLOCK - 6 * 3_600_000);
@@ -418,7 +433,7 @@ Deno.test("relative windows resolve against the clock", () => {
   assertEquals(opts("hours=1").window, "past 1 hour");
 });
 
-Deno.test("a bare since/until date resolves in the site's zone", () => {
+test("a bare since/until date resolves in the site's zone", () => {
   // Not UTC: Slickdeals publishes in Pacific, so "since 2026-08-25" must mean
   // midnight Pacific (07:00Z in summer), not midnight UTC.
   assertEquals(
@@ -432,7 +447,7 @@ Deno.test("a bare since/until date resolves in the site's zone", () => {
   );
 });
 
-Deno.test("the zone offset follows DST rather than being fixed", () => {
+test("the zone offset follows DST rather than being fixed", () => {
   // Pacific is -07:00 in August and -08:00 in January. A hardcoded offset would
   // put every winter bound an hour out.
   assertEquals(
@@ -441,7 +456,7 @@ Deno.test("the zone offset follows DST rather than being fixed", () => {
   );
 });
 
-Deno.test("full ISO timestamps are taken as given", () => {
+test("full ISO timestamps are taken as given", () => {
   assertEquals(
     opts("since=2026-08-25T12:30:00Z").since,
     Date.parse("2026-08-25T12:30:00Z"),
@@ -452,7 +467,7 @@ Deno.test("full ISO timestamps are taken as given", () => {
   );
 });
 
-Deno.test("competing ways to set the window start are refused", () => {
+test("competing ways to set the window start are refused", () => {
   // Rather than letting one silently win.
   assertThrows(() => opts("days=1&hours=6"), Error, "use one of them");
   assertThrows(() => opts("days=1&since=2026-08-25"), Error, "use one of them");
@@ -467,7 +482,7 @@ Deno.test("competing ways to set the window start are refused", () => {
   assertThrows(() => opts("days=lots"), Error, "must be a number");
 });
 
-Deno.test("the window keeps only deals inside it", () => {
+test("the window keeps only deals inside it", () => {
   const dated = deals.filter((d) => d.ts !== null);
   assert(dated.length > 5, "fixture has too few dated rows");
   const mid = dated.map((d) => d.ts!).sort((a, b) => a - b)[
@@ -484,7 +499,7 @@ Deno.test("the window keeps only deals inside it", () => {
   }
 });
 
-Deno.test("an undated deal is dropped by a window, like an unpriced one", () => {
+test("an undated deal is dropped by a window, like an unpriced one", () => {
   const rows = extractDeals({
     deals: [
       {
@@ -503,7 +518,7 @@ Deno.test("an undated deal is dropped by a window, like an unpriced one", () => 
   assertEquals(applyFilters(rows, opts()).length, 2);
 });
 
-Deno.test("a date bound forces a newest-first pool", () => {
+test("a date bound forces a newest-first pool", () => {
   // sort=popular is a selection, not an ordering: it returns the all-time most
   // popular, which a recent window would filter to almost nothing.
   assertEquals(buildBody(opts("sort=popular&days=3")).sort, "recent");
@@ -516,7 +531,7 @@ Deno.test("a date bound forces a newest-first pool", () => {
   }
 });
 
-Deno.test("no date filter is ever sent to the API", () => {
+test("no date filter is ever sent to the API", () => {
   // POST has no date vocabulary at all; sending one would be silently ignored.
   const body = buildBody(opts("days=3&until=2026-08-28"));
   for (const k of ["days", "since", "until", "date", "filters"]) {
@@ -524,7 +539,7 @@ Deno.test("no date filter is ever sent to the API", () => {
   }
 });
 
-Deno.test("windowComplete reports whether the pool reached the window", () => {
+test("windowComplete reports whether the pool reached the window", () => {
   const full = Array.from({ length: 10 }, (_, i) => ({
     ...deals[0],
     id: String(i),
@@ -568,7 +583,7 @@ Deno.test("windowComplete reports whether the pool reached the window", () => {
   );
 });
 
-Deno.test("an incomplete window is disclosed in the feed itself", () => {
+test("an incomplete window is disclosed in the feed itself", () => {
   const o = opts("days=30");
   const xml = buildFeed(applyFilters(deals, o), o, NOW, false);
   assert(
@@ -582,7 +597,7 @@ Deno.test("an incomplete window is disclosed in the feed itself", () => {
   );
 });
 
-Deno.test("the window appears in the feed title and description", () => {
+test("the window appears in the feed title and description", () => {
   assertEquals(
     describeFilters(opts("days=3&rating=frontpage")),
     "past 3 days, rated frontpage",
@@ -590,14 +605,14 @@ Deno.test("the window appears in the feed title and description", () => {
   assert(title(opts("days=3")).includes("past 3 days"));
 });
 
-Deno.test("the same input twice produces byte-identical output", () => {
+test("the same input twice produces byte-identical output", () => {
   // Anything unstable here churns every entry in FreshRSS on every poll.
   const o = opts("limit=10");
   const picked = applyFilters(deals, o);
   assertEquals(buildFeed(picked, o, NOW), buildFeed(picked, o, NOW));
 });
 
-Deno.test("titles and descriptions describe the actual filters", () => {
+test("titles and descriptions describe the actual filters", () => {
   const o = opts("rating=frontpage&minViews=5000&priceMax=100");
   assertEquals(
     describeFilters(o),
@@ -608,11 +623,11 @@ Deno.test("titles and descriptions describe the actual filters", () => {
   assert(xml.includes("5000+ views"));
 });
 
-Deno.test("a price range reads as a range, not as two bounds", () => {
+test("a price range reads as a range, not as two bounds", () => {
   assertEquals(describeFilters(opts("priceMin=20&priceMax=50")), "$20–$50");
 });
 
-Deno.test("an empty result set still renders a valid feed", () => {
+test("an empty result set still renders a valid feed", () => {
   const o = opts("minViews=99999999");
   const got = applyFilters(deals, o);
   assertEquals(got.length, 0);
@@ -621,7 +636,7 @@ Deno.test("an empty result set still renders a valid feed", () => {
   assert(!xml.includes("<item>"));
 });
 
-Deno.test("the price is in the item title, not its body", () => {
+test("the price is in the item title, not its body", () => {
   const [d] = extractDeals({
     deals: [{
       threadId: 1,
@@ -647,7 +662,7 @@ Deno.test("the price is in the item title, not its body", () => {
   assertEquals(headline({ ...d, finalPrice: "", extra: "" }), "USB-C Charger");
 });
 
-Deno.test("hostile deal text cannot break out of the XML", () => {
+test("hostile deal text cannot break out of the XML", () => {
   // The library CDATA-wraps titles, so a literal "<script>" in the output is
   // inert text rather than markup. What actually matters is that nothing can
   // terminate the CDATA early — hence the "]]>" case, which the library escapes
@@ -673,7 +688,7 @@ Deno.test("hostile deal text cannot break out of the XML", () => {
   assertEquals(validate(xml), true, "the feed is not well-formed XML");
 });
 
-Deno.test("the fixture feed is well-formed XML", () => {
+test("the fixture feed is well-formed XML", () => {
   const o = opts("limit=500&showStats=true");
   assertEquals(validate(buildFeed(applyFilters(deals, o), o, NOW)), true);
 });

@@ -6,9 +6,11 @@
  *     "https://cdn.contentful.com/spaces/1hpl803w8xsv/environments/master/entries?content_type=careersBlogArticle&locale=en-US&order=-fields.publishDate&limit=100&include=2&fields.categories.sys.id%5Bin%5D=3Yoj9Flwon0pteDV435r7U" \
  *     -o robinhood-contentful-tech-blog.json
  *
- * Run: deno test --allow-read test/robinhood-tech-rss.test.ts
+ * Run: node --test test/robinhood-tech-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -18,14 +20,14 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./robinhood-contentful-tech-blog.json", import.meta.url),
+  await readFile(
+    new URL("./robinhood-contentful-tech-blog.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(raw);
 const post = (slug: string) => posts.find((p) => p.slug.startsWith(slug))!;
 
-Deno.test("reads every entry in the category", () => {
+test("reads every entry in the category", () => {
   assertEquals(raw.total, 4, "entries Contentful reports");
   assertEquals(posts.length, 4, "posts");
   assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
@@ -39,7 +41,7 @@ Deno.test("reads every entry in the category", () => {
   assert(posts.every((p) => p.image), "every post has a featured image");
 });
 
-Deno.test("reads every field of a known item", () => {
+test("reads every field of a known item", () => {
   const p = post("trajectory-optimization-for-ai-agents");
   assertEquals(
     p.title,
@@ -55,7 +57,7 @@ Deno.test("reads every field of a known item", () => {
   );
 });
 
-Deno.test("resolves links through the includes rather than the entry", () => {
+test("resolves links through the includes rather than the entry", () => {
   // Contentful returns references as bare { sys: { id } } and puts the targets
   // in a sibling `includes` block, so every name here had to be looked up.
   const p = post("trajectory-optimization-for-ai-agents");
@@ -71,7 +73,7 @@ Deno.test("resolves links through the includes rather than the entry", () => {
   );
 });
 
-Deno.test("makes protocol-relative asset URLs absolute", () => {
+test("makes protocol-relative asset URLs absolute", () => {
   // Contentful hands back //images.ctfassets.net/…, which a reader cannot fetch.
   assert(
     posts.every((p) => p.image.startsWith("https://")),
@@ -79,7 +81,7 @@ Deno.test("makes protocol-relative asset URLs absolute", () => {
   );
 });
 
-Deno.test("reads the offset each publishDate carries", () => {
+test("reads the offset each publishDate carries", () => {
   // These are stored with the author's own offset rather than in UTC, and two
   // of them differ. Reading them as local time would shift the post by hours.
   assertEquals(
@@ -93,7 +95,7 @@ Deno.test("reads the offset each publishDate carries", () => {
   );
 });
 
-Deno.test("summarises with the paragraph the category page prints", () => {
+test("summarises with the paragraph the category page prints", () => {
   // The page prints the body's opening paragraph under each title; the SEO
   // description is written for search engines and on one entry here it is a
   // heading and a sentence run together.
@@ -106,7 +108,7 @@ Deno.test("summarises with the paragraph the category page prints", () => {
   );
 });
 
-Deno.test("joins the runs of a paragraph without inserting spaces", () => {
+test("joins the runs of a paragraph without inserting spaces", () => {
   // A linked or bolded phrase is its own text node inside the paragraph, so
   // the nodes join with nothing between them.
   const marked = {
@@ -153,7 +155,7 @@ Deno.test("joins the runs of a paragraph without inserting spaces", () => {
   );
 });
 
-Deno.test("falls back to the SEO description when there is no body", () => {
+test("falls back to the SEO description when there is no body", () => {
   const seoOnly = {
     items: [{
       fields: {
@@ -177,7 +179,7 @@ Deno.test("falls back to the SEO description when there is no body", () => {
   assertEquals(extractPosts(seoOnly)[0].description, "From the SEO entry");
 });
 
-Deno.test("keeps another category out even if the filter loosens", () => {
+test("keeps another category out even if the filter loosens", () => {
   // The query is already category-filtered, so this guards the case where that
   // filter is ever dropped or widened upstream.
   const mixed = {
@@ -209,7 +211,7 @@ Deno.test("keeps another category out even if the filter loosens", () => {
   assertEquals(extractPosts(mixed).map((p) => p.slug), ["ours"]);
 });
 
-Deno.test("survives input that is not the response we asked for", () => {
+test("survives input that is not the response we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ items: [] }).length, 0, "empty");
   assertEquals(extractPosts([]).length, 0, "not a response body");
@@ -228,7 +230,7 @@ Deno.test("survives input that is not the response we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/robinhood${query}`)).text();
 
-Deno.test("serves the Tech Blog category", async () => {
+test("serves the Tech Blog category", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 4, "every post");
   assert(
@@ -255,14 +257,14 @@ Deno.test("serves the Tech Blog category", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?category=community&limit=2&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/robinhood" rel="self"'),
@@ -285,7 +287,7 @@ const SAMPLE_ITEM: Post = {
   categories: ["Tech Blog"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -315,12 +317,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -332,7 +333,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the item lacks them", () => {
+test("omits optional elements when the item lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

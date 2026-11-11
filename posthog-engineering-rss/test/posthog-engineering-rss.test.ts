@@ -3,9 +3,11 @@
  * capture of the Strapi query the val makes — see `queryUrl` in the val for
  * the parameters; the browser sends the same ones.
  *
- * Run: deno test --allow-read test/posthog-engineering-rss.test.ts
+ * Run: node --test test/posthog-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -15,8 +17,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./posthog-strapi-engineering.json", import.meta.url),
+  await readFile(
+    new URL("./posthog-strapi-engineering.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(raw);
@@ -26,7 +28,7 @@ const FEED_URL = "https://feed.val.run/posthog";
 const feed = (query = "") =>
   buildFeed(posts, new URL(`${FEED_URL}${query}`)).text();
 
-Deno.test("reads every post in the tag", () => {
+test("reads every post in the tag", () => {
   assertEquals(raw.meta.pagination.total, 58, "posts Strapi reports");
   assertEquals(posts.length, 58, "posts read");
   assert(posts.every((p) => p.path && p.title), "every post has a path/title");
@@ -44,7 +46,7 @@ Deno.test("reads every post in the tag", () => {
   );
 });
 
-Deno.test("unwraps Strapi's relation envelopes", () => {
+test("unwraps Strapi's relation envelopes", () => {
   // Strapi v4 wraps every relation as { data: … } and every record's fields
   // under `attributes`, so nothing here is read straight off the entry.
   const p = post("/newsletter/software-factories");
@@ -61,7 +63,7 @@ Deno.test("unwraps Strapi's relation envelopes", () => {
   );
 });
 
-Deno.test("dates posts by `date`, not by when Strapi got them", () => {
+test("dates posts by `date`, not by when Strapi got them", () => {
   // `publishedAt` is when the record entered Strapi — for this post two days
   // after it went out, and for a backfilled one it can be years later.
   const p = post("/newsletter/software-factories");
@@ -76,7 +78,7 @@ Deno.test("dates posts by `date`, not by when Strapi got them", () => {
   );
 });
 
-Deno.test("joins several authors the way a byline reads", () => {
+test("joins several authors the way a byline reads", () => {
   const multi = posts.find((p) => p.author.includes(" & "));
   assert(multi, "the tag has at least one co-written post");
   assert(
@@ -85,7 +87,7 @@ Deno.test("joins several authors the way a byline reads", () => {
   );
 });
 
-Deno.test("keeps posts from every section the tag spans", () => {
+test("keeps posts from every section the tag spans", () => {
   // PostHog files these under several folders and the listing gathers them
   // all, so the feed should not be a /blog-only subset.
   const sections = new Set(posts.map((p) => p.path.split("/")[1]));
@@ -96,7 +98,7 @@ Deno.test("keeps posts from every section the tag spans", () => {
   );
 });
 
-Deno.test("drops a post that does not carry the tag", () => {
+test("drops a post that does not carry the tag", () => {
   // The query is already tag-filtered; this guards the filter loosening.
   const entry = (label: string) => ({
     attributes: {
@@ -113,7 +115,7 @@ Deno.test("drops a post that does not carry the tag", () => {
   );
 });
 
-Deno.test("survives input that is not the response we asked for", () => {
+test("survives input that is not the response we asked for", () => {
   assertEquals(extractPosts(null).length, 0, "null");
   assertEquals(extractPosts({ data: [] }).length, 0, "empty");
   assertEquals(extractPosts([]).length, 0, "not a response body");
@@ -124,7 +126,7 @@ Deno.test("survives input that is not the response we asked for", () => {
   );
 });
 
-Deno.test("serves the tag", async () => {
+test("serves the tag", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 58, "every post");
   assert(
@@ -144,20 +146,20 @@ Deno.test("serves the tag", async () => {
   assert(body.includes("<category>Engineering</category>"), "category");
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?tag=Product&limit=5");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
   assertEquals((body.match(/<item>/g) ?? []).length, 58, "params ignored");
 });
 
-Deno.test("names the image media type rather than letting it be guessed", async () => {
+test("names the image media type rather than letting it be guessed", async () => {
   const body = await feed();
   assert(!body.includes('type="image/jpg"'), "no invalid image/jpg");
 
@@ -193,7 +195,7 @@ const SAMPLE: Post = {
   labels: ["Blog", "Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const out = renderRss({
     title: "Feed & <friends>",
@@ -222,12 +224,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const out = renderRss({
     title: "T",
     description: "d",
@@ -239,7 +240,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(out), "no early termination");
 });
 
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     path: "/blog/bare",
     title: "Bare",

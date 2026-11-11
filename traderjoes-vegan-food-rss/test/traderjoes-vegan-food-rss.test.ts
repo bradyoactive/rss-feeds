@@ -18,9 +18,11 @@
  *
  * Note the apex host: www is bot-blocked and answers curl with 403.
  *
- * Run: deno test --allow-read test/traderjoes-vegan-food-rss.test.ts
+ * Run: node --test test/traderjoes-vegan-food-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   describe,
@@ -34,8 +36,8 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const raw = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./traderjoes-vegan-food.json", import.meta.url),
+  await readFile(
+    new URL("./traderjoes-vegan-food.json", import.meta.url), "utf8",
   ),
 );
 const listing = extractProducts(raw);
@@ -45,7 +47,7 @@ const bySku = (sku: string) => products.find((p) => p.sku === sku)!;
 const FEED_URL = "https://feed.val.run/traderjoes";
 const feed = () => buildFeed(listing, new URL(FEED_URL)).text();
 
-Deno.test("reads the published vegan food products and only those", () => {
+test("reads the published vegan food products and only those", () => {
   assertEquals(products.length, 140, "published products");
   assert(
     products.every((p) => p.characteristics.includes("Vegan")),
@@ -66,7 +68,7 @@ Deno.test("reads the published vegan food products and only those", () => {
   assert(products.every((p) => p.price), "every product has a price");
 });
 
-Deno.test("drops the unpublished rows, whose pages 404", () => {
+test("drops the unpublished rows, whose pages 404", () => {
   // This is the guard that matters most: the payload carries a third more rows
   // than the feed should, and every extra one is a dead link. Verified against
   // the live site 2026-09-06 — regression-cocktail-10032021, vegan-pepperoni-076348,
@@ -85,7 +87,7 @@ Deno.test("drops the unpublished rows, whose pages 404", () => {
   assert(kept.has("084084"), "a published product is kept");
 });
 
-Deno.test("the fields the val reads survive being unpublished", () => {
+test("the fields the val reads survive being unpublished", () => {
   // The three undated rows, the three with no marketing copy and the two with
   // no image are all unpublished, which is why the assertions above can be
   // unconditional. If that stops being true the feed needs the fallbacks the
@@ -101,7 +103,7 @@ Deno.test("the fields the val reads survive being unpublished", () => {
   );
 });
 
-Deno.test("reads every field of a known product", () => {
+test("reads every field of a known product", () => {
   const p = bySku("084084");
   assertEquals(p.title, "Chewy Thai Coconut Cakes", "title");
   assertEquals(p.ts, Date.parse("2026-08-24T18:08:06Z"), "ts");
@@ -123,9 +125,9 @@ Deno.test("reads every field of a known product", () => {
   assert(p.story.startsWith("<p>Chewy Thai coconut cakes are among"), "story");
 });
 
-Deno.test("dates the space-separated timestamp as UTC", () => {
+test("dates the space-separated timestamp as UTC", () => {
   // Date.parse would read "2026-08-24 18:08:06" as local time, which happens
-  // to be UTC on val.town but only by accident and is not UTC under `deno test`
+  // to be UTC on val.town but only by accident and is not UTC under `node --test`
   // on this laptop. See the val's header for the evidence that UTC is right.
   assertEquals(parseTimestamp("2026-08-24 18:08:06"), 1787594886000, "instant");
   assertEquals(
@@ -142,7 +144,7 @@ Deno.test("dates the space-separated timestamp as UTC", () => {
   assertEquals(parseTimestamp("not a date"), null, "garbage rejected");
 });
 
-Deno.test("builds product URLs with the site's own slug rules", () => {
+test("builds product URLs with the site's own slug rules", () => {
   // Each of these is a case the obvious slugify writes differently from the
   // site. They all resolve either way — the page keys on the trailing sku —
   // so what is pinned here is that the val emits the same link the site does.
@@ -173,7 +175,7 @@ Deno.test("builds product URLs with the site's own slug rules", () => {
   );
 });
 
-Deno.test("reproduces the site's slugify quirks exactly", () => {
+test("reproduces the site's slugify quirks exactly", () => {
   // Lifted verbatim from Trader Joe's bundle. These are the rules a fresh
   // implementation would "fix" and thereby drift from the site's own links.
   assertEquals(slugify("A & B"), "a-b", "& deleted, then spaces collapsed");
@@ -190,7 +192,7 @@ Deno.test("reproduces the site's slugify quirks exactly", () => {
   );
 });
 
-Deno.test("url_key is not the product URL", () => {
+test("url_key is not the product URL", () => {
   // The API returns a field that looks exactly like this slug but orders it
   // sku-first ("084084-kanom-dok-mai-chewy-coconut-cakes"), and the resolver
   // only looks for a sku at the *end*, so it 404s. Pin the difference so
@@ -204,7 +206,7 @@ Deno.test("url_key is not the product URL", () => {
   );
 });
 
-Deno.test("orders the feed newest product first", async () => {
+test("orders the feed newest product first", async () => {
   const xml = await feed();
   const titles = [...xml.matchAll(/<title>(?:<!\[CDATA\[)?([^\]<]*)/g)]
     .map((m) => m[1]);
@@ -215,7 +217,7 @@ Deno.test("orders the feed newest product first", async () => {
   assert(sorted[0].ts! >= sorted[sorted.length - 1].ts!, "descending");
 });
 
-Deno.test("emits a link-only guid so readers dedupe on the URL", async () => {
+test("emits a link-only guid so readers dedupe on the URL", async () => {
   const xml = await feed();
   assert(
     xml.includes(
@@ -226,7 +228,7 @@ Deno.test("emits a link-only guid so readers dedupe on the URL", async () => {
   assert(!xml.includes('isPermaLink="false"'), "no opaque guids");
 });
 
-Deno.test("carries the taxonomy and characteristics as categories", async () => {
+test("carries the taxonomy and characteristics as categories", async () => {
   const xml = await feed();
   const item = xml.slice(xml.indexOf("<item>"), xml.indexOf("</item>"));
   for (const c of ["Food", "From The Freezer", "Cool Desserts", "Vegan"]) {
@@ -234,7 +236,7 @@ Deno.test("carries the taxonomy and characteristics as categories", async () => 
   }
 });
 
-Deno.test("states the enclosure's type so a reader renders the image", async () => {
+test("states the enclosure's type so a reader renders the image", async () => {
   const xml = await feed();
   // FreshRSS decides whether to rewrite an <enclosure> into an <img> from the
   // mime type, so an untyped enclosure is an invisible product photo.
@@ -263,7 +265,7 @@ Deno.test("states the enclosure's type so a reader renders the image", async () 
   );
 });
 
-Deno.test("keeps volatile inventory state out of the item body", () => {
+test("keeps volatile inventory state out of the item body", () => {
   // FreshRSS hashes link + title + content + tags to decide an entry changed
   // and re-dates it when it did, so "GOING FAST" in the body would churn
   // products published years ago on every poll.
@@ -279,7 +281,7 @@ Deno.test("keeps volatile inventory state out of the item body", () => {
   assertEquals(labels.size, 0, "the val does not even request product_label");
 });
 
-Deno.test("composes the facts line and leaves the story as HTML", () => {
+test("composes the facts line and leaves the story as HTML", () => {
   const body = describe(bySku("084084"));
   assert(
     body.includes("<p>$3.79 · 4.76 Oz · Product of Thailand · Vegan</p>"),
@@ -294,7 +296,7 @@ Deno.test("composes the facts line and leaves the story as HTML", () => {
   );
 });
 
-Deno.test("omits a size that says nothing", () => {
+test("omits a size that says nothing", () => {
   // "1 Each" is not a size. Gum, sku 067358, is the case.
   assertEquals(bySku("067358").size, "", "1 Each is dropped");
   assert(
@@ -307,7 +309,7 @@ Deno.test("omits a size that says nothing", () => {
   );
 });
 
-Deno.test("escapes the text it composes but not the story's own markup", () => {
+test("escapes the text it composes but not the story's own markup", () => {
   // The story is HTML by design; the facts line is text this val builds and
   // could carry an & from a country or characteristic.
   const p: Product = {
@@ -321,7 +323,7 @@ Deno.test("escapes the text it composes but not the story's own markup", () => {
   assert(body.includes("<p>real <em>markup</em></p>"), "story left alone");
 });
 
-Deno.test("reports a complete listing, and says so when it is not", async () => {
+test("reports a complete listing, and says so when it is not", async () => {
   // The fixture is the *unnarrowed* query, so its total_count is 210 against
   // 140 kept — which is exactly the case that must NOT read as truncation.
   assertEquals(listing.rowCount, 210, "rows the API sent");
@@ -357,7 +359,7 @@ Deno.test("reports a complete listing, and says so when it is not", async () => 
   );
 });
 
-Deno.test("survives a payload that has gone wrong rather than throwing", () => {
+test("survives a payload that has gone wrong rather than throwing", () => {
   assertEquals(extractProducts(null).products.length, 0, "null");
   assertEquals(extractProducts({}).products.length, 0, "empty object");
   assertEquals(
@@ -370,7 +372,7 @@ Deno.test("survives a payload that has gone wrong rather than throwing", () => {
   assertEquals(empty.rowCount, 0, "rowCount too");
 });
 
-Deno.test("renders a well-formed document with every item present", async () => {
+test("renders a well-formed document with every item present", async () => {
   const xml = await feed();
   assertEquals(
     (xml.match(/<item>/g) ?? []).length,
@@ -393,6 +395,5 @@ Deno.test("renders a well-formed document with every item present", async () => 
     ),
     "channel links at the filtered category page",
   );
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(xml), "no illegal control chars");
 });

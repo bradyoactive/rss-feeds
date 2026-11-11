@@ -79,8 +79,10 @@ export interface Post {
 
 /** A failed fetch, remembering the URL so the 502 can name it. */
 class UpstreamError extends Error {
-  constructor(readonly url: string, cause: unknown) {
+  readonly url: string;
+  constructor(url: string, cause: unknown) {
     super(cause instanceof Error ? cause.message : String(cause));
+    this.url = url;
   }
 }
 
@@ -353,7 +355,6 @@ function str(v: unknown): string {
  * just its own item. Scraped titles are exactly where one would come from.
  */
 function clean(s: string): string {
-  // deno-lint-ignore no-control-regex
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 

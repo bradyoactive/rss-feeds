@@ -1,7 +1,7 @@
 /**
  * Live link check for the Trader Joe's vegan food feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/traderjoes-vegan-food-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/traderjoes-vegan-food-rss.linkcheck.test.ts
  *
  * ## What this suite cannot check, and why
  *

@@ -7,9 +7,11 @@
  *     "https://www.linkedin.com/blog/engineering" \
  *     > test/linkedin-engineering.html
  *
- * Run: deno test --allow-read test/linkedin-engineering-rss.test.ts
+ * Run: node --test test/linkedin-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   clean,
@@ -22,13 +24,13 @@ import {
 } from "../linkedin-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const html = await Deno.readTextFile(
-  new URL("./linkedin-engineering.html", import.meta.url),
+const html = await readFile(
+  new URL("./linkedin-engineering.html", import.meta.url), "utf8",
 );
 const posts = extractPosts(html);
 const byUrl = (url: string) => posts.find((p) => p.url === url);
 
-Deno.test("extracts all posts from the fixture", () => {
+test("extracts all posts from the fixture", () => {
   assertEquals(posts.length, 15, "unique post count");
   assert(
     posts.every((p) => p.title && p.url),
@@ -41,7 +43,7 @@ Deno.test("extracts all posts from the fixture", () => {
   );
 });
 
-Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
+test("every post in fixture is dated with a valid UTC timestamp", () => {
   assertEquals(
     posts.filter((p) => p.ts === null).length,
     0,
@@ -53,7 +55,7 @@ Deno.test("every post in fixture is dated with a valid UTC timestamp", () => {
   );
 });
 
-Deno.test("reads a known post's fields accurately", () => {
+test("reads a known post's fields accurately", () => {
   const p = byUrl(
     "https://www.linkedin.com/blog/engineering/infrastructure/scaling-spark-and-flink-shuffle-at-linkedin-with-apache-celeborn",
   )!;
@@ -68,7 +70,7 @@ Deno.test("reads a known post's fields accurately", () => {
   assertEquals(p.categories, ["Engineering", "Infrastructure"], "categories");
 });
 
-Deno.test("handles authorless posts with default byline", () => {
+test("handles authorless posts with default byline", () => {
   const p = byUrl(
     "https://www.linkedin.com/blog/engineering/culture/career-stories--the-math-music-connection-in-data-science",
   )!;
@@ -76,7 +78,7 @@ Deno.test("handles authorless posts with default byline", () => {
   assertEquals(p.author, "LinkedIn Engineering", "default author");
 });
 
-Deno.test("extractCategory parses topics from URLs correctly", () => {
+test("extractCategory parses topics from URLs correctly", () => {
   assertEquals(
     extractCategory(
       "https://www.linkedin.com/blog/engineering/infrastructure/post-slug",
@@ -96,7 +98,7 @@ Deno.test("extractCategory parses topics from URLs correctly", () => {
   assertEquals(extractCategory("https://www.linkedin.com/other"), "");
 });
 
-Deno.test("normalizeUrl handles absolute and relative paths", () => {
+test("normalizeUrl handles absolute and relative paths", () => {
   assertEquals(
     normalizeUrl("https://www.linkedin.com/blog/engineering/post"),
     "https://www.linkedin.com/blog/engineering/post",
@@ -107,14 +109,14 @@ Deno.test("normalizeUrl handles absolute and relative paths", () => {
   );
 });
 
-Deno.test("parseDate handles English dates and ISO strings", () => {
+test("parseDate handles English dates and ISO strings", () => {
   assertEquals(parseDate("Oct 14, 2026"), Date.parse("Oct 14, 2026"));
   assertEquals(parseDate("2026-10-14"), Date.UTC(2026, 9, 14, 0, 0, 0));
   assertEquals(parseDate("not a date"), null);
   assertEquals(parseDate(""), null);
 });
 
-Deno.test("orders items newest first in buildFeed", () => {
+test("orders items newest first in buildFeed", () => {
   const feed = buildFeed(posts, new URL("https://feed.val.run/linkedin"));
   assertEquals(feed.status, 200);
   assertEquals(
@@ -124,7 +126,7 @@ Deno.test("orders items newest first in buildFeed", () => {
   assertEquals(feed.headers.get("cache-control"), "public, max-age=43200");
 });
 
-Deno.test("renderRss produces valid RSS 2.0 with permalinks", () => {
+test("renderRss produces valid RSS 2.0 with permalinks", () => {
   const sample: Post[] = [
     {
       url: "https://www.linkedin.com/blog/engineering/infrastructure/sample",
@@ -161,12 +163,12 @@ Deno.test("renderRss produces valid RSS 2.0 with permalinks", () => {
   assert(xml.includes("<category>Infrastructure</category>"), "category");
 });
 
-Deno.test("clean strips control characters that break XML 1.0", () => {
+test("clean strips control characters that break XML 1.0", () => {
   const input = "Title with \x00 null and \x0B vertical tab";
   assertEquals(clean(input), "Title with  null and  vertical tab");
 });
 
-Deno.test("throws error if grid posts are missing", () => {
+test("throws error if grid posts are missing", () => {
   let threw = false;
   try {
     extractPosts("<html><body>No posts here</body></html>");

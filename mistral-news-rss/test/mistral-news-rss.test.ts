@@ -21,9 +21,11 @@
  * *live* pair, which yields the same 41 posts, the same Research 39 /
  * Engineering 2 split and the same 7 descriptions the retired Payload API did.
  *
- * Run: deno test --allow-read test/mistral-news-rss.test.ts
+ * Run: node --test test/mistral-news-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   displayNames,
@@ -33,11 +35,11 @@ import {
 } from "../mistral-news-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const pageHtml = await Deno.readTextFile(
-  new URL("./mistral-news-page.html", import.meta.url),
+const pageHtml = await readFile(
+  new URL("./mistral-news-page.html", import.meta.url), "utf8",
 );
-const feedXml = await Deno.readTextFile(
-  new URL("./mistral-news-rss.xml", import.meta.url),
+const feedXml = await readFile(
+  new URL("./mistral-news-rss.xml", import.meta.url), "utf8",
 );
 
 const posts = extractPosts(pageHtml, feedXml);
@@ -51,7 +53,7 @@ const countByCategory = () => {
   return counts;
 };
 
-Deno.test("keeps only the two categories it exists for", () => {
+test("keeps only the two categories it exists for", () => {
   assertEquals(posts.length, 8, "post count");
   assertEquals(countByCategory(), {
     Research: 6,
@@ -71,7 +73,7 @@ Deno.test("keeps only the two categories it exists for", () => {
   );
 });
 
-Deno.test("joins the firehose onto the listing by slug", () => {
+test("joins the firehose onto the listing by slug", () => {
   const p = bySlug("robostral-navigate")!;
   // From the page: title, byline, thumbnail, category.
   assertEquals(p.title, "Introducing Robostral Navigate", "title");
@@ -90,7 +92,7 @@ Deno.test("joins the firehose onto the listing by slug", () => {
   );
 });
 
-Deno.test("drops the ?dpl= cache buster from every thumbnail", () => {
+test("drops the ?dpl= cache buster from every thumbnail", () => {
   // It changes on every mistral.ai deploy, and FreshRSS hashes the enclosure
   // URL — leaving it on re-unreads the whole feed when Mistral ships anything.
   assert(posts.every((p) => p.image), "every post has a thumbnail");
@@ -104,7 +106,7 @@ Deno.test("drops the ?dpl= cache buster from every thumbnail", () => {
   assert(pageHtml.includes("?dpl="), "and really does carry the buster");
 });
 
-Deno.test("descriptions are as sparse as the source, and that is the finding", () => {
+test("descriptions are as sparse as the source, and that is the finding", () => {
   // Mistral sets a summary on a minority of posts. Fetching each post page to
   // fill the rest was measured and recovers nothing — see the val's header.
   assertEquals(posts.filter((p) => p.description).length, 3, "descriptions");
@@ -115,7 +117,7 @@ Deno.test("descriptions are as sparse as the source, and that is the finding", (
   assert(posts.every((p) => p.ts !== null), "every post is dated");
 });
 
-Deno.test("names the categories the site actually used, in order", () => {
+test("names the categories the site actually used, in order", () => {
   assertEquals(displayNames(posts), ["Engineering", "Research"], "both");
   // A category no post currently uses drops out rather than leaving a gap.
   const researchOnly = posts.filter((p) => p.categories.includes("Research"));
@@ -123,7 +125,7 @@ Deno.test("names the categories the site actually used, in order", () => {
   assertEquals(displayNames([]), [], "none at all");
 });
 
-Deno.test("decodes the entities both sources escape", () => {
+test("decodes the entities both sources escape", () => {
   // The page escapes &amp; and &#39;; the feed escapes &apos;. Either would
   // ship double-encoded if it reached the feed library as written.
   const card = `<article class="js-post" data-categories="engineering">
@@ -143,7 +145,7 @@ Deno.test("decodes the entities both sources escape", () => {
   assertEquals(p.description, "it's fine", "description");
 });
 
-Deno.test("falls back to the card's date for a post the firehose dropped", () => {
+test("falls back to the card's date for a post the firehose dropped", () => {
   const card = `<article class="js-post" data-categories="engineering">
     <a href="/news/orphan/"></a>
     <span data-category-slug="engineering"><p>Engineering</p></span>
@@ -163,12 +165,12 @@ Deno.test("falls back to the card's date for a post the firehose dropped", () =>
   assertEquals(undated.ts, null, "unparseable date");
 });
 
-Deno.test("posts arrive newest first", () => {
+test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("survives markup that is not what we asked for", () => {
+test("survives markup that is not what we asked for", () => {
   assertEquals(extractPosts("", "").length, 0, "nothing at all");
   assertEquals(
     extractPosts("<article class='js-post'>no anchor</article>", "").length,
@@ -198,7 +200,7 @@ Deno.test("survives markup that is not what we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/mistral${query}`)).text();
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 8, "all posts");
   assert(
@@ -226,7 +228,7 @@ Deno.test("serves the feed", async () => {
   assert(body.includes("<author>Mistral AI</author>"), "byline");
 });
 
-Deno.test("sends a cache-control window rather than leaning on the isolate", async () => {
+test("sends a cache-control window rather than leaning on the isolate", async () => {
   const res = buildFeed(posts, new URL("https://feed.val.run/mistral"));
   assertEquals(
     res.headers.get("cache-control"),
@@ -241,7 +243,7 @@ Deno.test("sends a cache-control window rather than leaning on the isolate", asy
   await res.text();
 });
 
-Deno.test("orders items newest first in the feed too", async () => {
+test("orders items newest first in the feed too", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
@@ -249,7 +251,7 @@ Deno.test("orders items newest first in the feed too", async () => {
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?categories=product&limit=5&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/mistral" rel="self"'),
@@ -270,7 +272,7 @@ const SAMPLE_ITEM: Post = {
   categories: ["Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -299,12 +301,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const xml = renderRss({
     title: "T",
     description: "d",
@@ -316,7 +317,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
 
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

@@ -7,9 +7,11 @@
  *     "https://cdn.contentful.com/spaces/bx9krvy0u3sx/environments/master/entries?content_type=blogPost&order=-fields.publishDate&include=2&limit=50&fields.blogCategory%5Bin%5D=Engineering%20At%20Samsara" \
  *     -o samsara-contentful-engineering.json
  *
- * Run: deno test --allow-read test/samsara-engineering-rss.test.ts
+ * Run: node --test test/samsara-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import handler, {
   buildFeed,
   extractCredentials,
@@ -19,20 +21,20 @@ import handler, {
 } from "../samsara-engineering-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const pageHtml = await Deno.readTextFile(
-  new URL("./samsara-engineering.html", import.meta.url),
+const pageHtml = await readFile(
+  new URL("./samsara-engineering.html", import.meta.url), "utf8",
 );
 const payload = JSON.parse(
-  await Deno.readTextFile(
+  await readFile(
     new URL(
       "./samsara-contentful-engineering.json",
       import.meta.url,
-    ),
+    ), "utf8",
   ),
 );
 const posts = extractPosts(payload);
 
-Deno.test("extracts every post in the category", () => {
+test("extracts every post in the category", () => {
   // `total` is 15 and the request asked for 50, so there is no page to follow.
   assertEquals(payload.total, posts.length, "no unread page of entries");
   assertEquals(posts.length, 15, "post count");
@@ -60,7 +62,7 @@ Deno.test("extracts every post in the category", () => {
   );
 });
 
-Deno.test("resolves author and categories through includes", () => {
+test("resolves author and categories through includes", () => {
   assert(posts.every((p) => p.author), "every post has an author");
   assertEquals(posts[0].author, "Praveen Murugesan", "author");
   assertEquals(posts[0].categories, ["Engineering At Samsara"], "categories");
@@ -76,7 +78,7 @@ Deno.test("resolves author and categories through includes", () => {
   );
 });
 
-Deno.test("absolutizes asset URLs and takes their declared type", () => {
+test("absolutizes asset URLs and takes their declared type", () => {
   assert(
     posts.every((p) =>
       p.image.startsWith("https://images.ctfassets.net/bx9krvy0u3sx/")
@@ -96,7 +98,7 @@ Deno.test("absolutizes asset URLs and takes their declared type", () => {
   );
 });
 
-Deno.test("degrades on an entry missing its optional fields", () => {
+test("degrades on an entry missing its optional fields", () => {
   const bare = extractPosts({
     items: [
       { sys: { id: "1" }, fields: { title: "No slug" } },
@@ -127,7 +129,7 @@ Deno.test("degrades on an entry missing its optional fields", () => {
   assertEquals(extractPosts({}).length, 0, "an empty payload yields nothing");
 });
 
-Deno.test("falls back from metaDescription and metaImage", () => {
+test("falls back from metaDescription and metaImage", () => {
   const [post] = extractPosts({
     items: [{
       sys: { createdAt: "2025-01-02T03:04:05Z" },
@@ -168,7 +170,7 @@ Deno.test("falls back from metaDescription and metaImage", () => {
   );
 });
 
-Deno.test("reads Contentful credentials from the Nuxt config blob", () => {
+test("reads Contentful credentials from the Nuxt config blob", () => {
   assertEquals(extractCredentials(pageHtml), {
     spaceId: "bx9krvy0u3sx",
     accessToken:
@@ -198,7 +200,7 @@ const feed = async (query = "") => {
 
 const itemCount = (xml: string) => (xml.match(/<item>/g) ?? []).length;
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const { status, body } = await feed("");
   assertEquals(status, 200, "status");
   assertEquals(itemCount(body), 15, "all posts");
@@ -228,14 +230,14 @@ Deno.test("serves the feed", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map((
     m,
   ) => Date.parse(m[1]));
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   // ?category= and ?limit= are gone; passing them should change nothing.
   const { body } = await feed("?category=safety&limit=5&utm_source=x");
   assert(
@@ -259,7 +261,7 @@ const SAMPLE_ITEM: Post = {
   categories: ["Engineering At Samsara"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -290,12 +292,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   // "]]>" inside a title would end the CDATA early and corrupt the document;
   // the library splits it, and this pins that it still does.
   const xml = renderRss({
@@ -308,7 +309,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(xml.includes("]]]]><![CDATA[>"), "breakout split");
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const xml = renderRss({
     title: "T",
     description: "D",
@@ -336,7 +337,7 @@ Deno.test("omits optional elements when the post lacks them", () => {
   );
 });
 
-Deno.test("emits an enclosure without a type when the asset had none", () => {
+test("emits an enclosure without a type when the asset had none", () => {
   // Contentful normally states contentType; when it does not, the library is
   // left to infer, and the item must still carry its image.
   const [post] = extractPosts({
@@ -417,7 +418,7 @@ const unauthorized = () =>
     status: 401,
   });
 
-Deno.test("the happy path never touches the blog", async () => {
+test("the happy path never touches the blog", async () => {
   const { calls, restore } = stubFetch(() => entriesJson());
   try {
     const res = await handler(new Request("https://feed.val.run/samsara"));
@@ -430,7 +431,7 @@ Deno.test("the happy path never touches the blog", async () => {
   }
 });
 
-Deno.test("a rejected token is re-read from the blog and retried", async () => {
+test("a rejected token is re-read from the blog and retried", async () => {
   // Contentful accepts only the rotated token; the blog now advertises it.
   const { calls, restore } = stubFetch((url, token) => {
     if (url.startsWith(CDN)) {
@@ -454,7 +455,7 @@ Deno.test("a rejected token is re-read from the blog and retried", async () => {
   }
 });
 
-Deno.test("a rotation the blog cannot explain fails loudly", async () => {
+test("a rotation the blog cannot explain fails loudly", async () => {
   // 401 everywhere and a page with no credentials in it: better a 502 than an
   // empty feed that looks like Samsara stopped publishing.
   const { calls, restore } = stubFetch((url) =>

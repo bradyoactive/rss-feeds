@@ -1,7 +1,7 @@
 /**
  * Live link check for the Robinhood Tech Blog feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/robinhood-tech-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/robinhood-tech-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts } from "../robinhood-tech-rss.ts";

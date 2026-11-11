@@ -9,9 +9,11 @@
  *     -d '{"query":"","hitsPerPage":100,"filters":"hubs.name:\"Engineering\""}' \
  *     > test/rippling-algolia-engineering.json
  *
- * Run: deno test --allow-read test/rippling-engineering-rss.test.ts
+ * Run: node --test test/rippling-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -21,14 +23,14 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./rippling-algolia-engineering.json", import.meta.url),
+  await readFile(
+    new URL("./rippling-algolia-engineering.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(payload);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("extracts every Engineering hit from the response", () => {
+test("extracts every Engineering hit from the response", () => {
   assertEquals(posts.length, 43, "post count");
   assertEquals(posts.length, payload.nbHits, "one page covers the hub whole");
   assert(posts.every((p) => p.slug && p.title), "every post has a slug/title");
@@ -43,7 +45,7 @@ Deno.test("extracts every Engineering hit from the response", () => {
   );
 });
 
-Deno.test("keeps out a hit that is not in the hub", () => {
+test("keeps out a hit that is not in the hub", () => {
   // The query is server-filtered, so this can only happen if that filter
   // loosens — which is exactly when a silent extra post would appear.
   const stray = { ...payload.hits[0], slug: "stray", hubs: [{ name: "HR" }] };
@@ -51,7 +53,7 @@ Deno.test("keeps out a hit that is not in the hub", () => {
   assertEquals(extracted.length, 0, "HR-only post dropped");
 });
 
-Deno.test("parses both publishedDate shapes as UTC", () => {
+test("parses both publishedDate shapes as UTC", () => {
   // The index holds date-only "2026-03-25" and naive "2025-04-30T11:23:33".
   // Date.parse reads the first as UTC and the second as *local* time, which
   // would shift a post by hours depending on where the val runs.
@@ -79,7 +81,7 @@ Deno.test("parses both publishedDate shapes as UTC", () => {
   assertEquals(posts.length - withTime, 6, "date-only dates");
 });
 
-Deno.test("absolutizes the image and takes its type from Contentful", () => {
+test("absolutizes the image and takes its type from Contentful", () => {
   assert(
     posts.every((p) => p.image.startsWith("https://images.ctfassets.net/")),
     "protocol-relative URLs made absolute",
@@ -90,7 +92,7 @@ Deno.test("absolutizes the image and takes its type from Contentful", () => {
   );
 });
 
-Deno.test("joins a multi-author byline", () => {
+test("joins a multi-author byline", () => {
   const many = posts.find((p) => p.author.includes(" & "))!;
   assert(many, "the fixture still has a multi-author post");
   assert(
@@ -103,7 +105,7 @@ Deno.test("joins a multi-author byline", () => {
   );
 });
 
-Deno.test("degrades on a hit missing image, excerpt, authors and date", () => {
+test("degrades on a hit missing image, excerpt, authors and date", () => {
   const hit = { ...payload.hits[0] };
   delete hit.featuredImage;
   delete hit.excerpt;
@@ -130,7 +132,7 @@ Deno.test("degrades on a hit missing image, excerpt, authors and date", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/rippling${query}`)).text();
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 43, "all posts");
   assert(
@@ -148,7 +150,7 @@ Deno.test("serves the feed", async () => {
   );
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed()).matchAll(/<pubDate>([^<]+)</g)].map((m) =>
     Date.parse(m[1])
   );
@@ -156,7 +158,7 @@ Deno.test("orders items newest first", async () => {
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   // ?hub= and ?limit= are gone; passing them should change nothing.
   const body = await feed("?hub=hr&limit=5&utm_source=x");
   assert(
@@ -179,7 +181,7 @@ const SAMPLE_ITEM: Post = {
   hubs: ["Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -210,12 +212,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   // "]]>" inside a title would end the CDATA early and corrupt the document;
   // the library splits it, and this pins that it still does.
   const xml = renderRss({
@@ -228,7 +229,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(xml.includes("]]]]><![CDATA[>"), "breakout split");
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

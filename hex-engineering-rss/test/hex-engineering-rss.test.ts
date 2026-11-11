@@ -11,9 +11,11 @@
  *          "categories": categories[]->name }' \
  *     > test/hex-sanity-engineering.json
  *
- * Run: deno test --allow-read test/hex-engineering-rss.test.ts
+ * Run: node --test test/hex-engineering-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractPosts,
@@ -23,14 +25,14 @@ import {
 import { assert, assertEquals } from "../../common/assert.ts";
 
 const payload = JSON.parse(
-  await Deno.readTextFile(
-    new URL("./hex-sanity-engineering.json", import.meta.url),
+  await readFile(
+    new URL("./hex-sanity-engineering.json", import.meta.url), "utf8",
   ),
 );
 const posts = extractPosts(payload);
 const bySlug = (slug: string) => posts.find((p) => p.slug === slug);
 
-Deno.test("reads the whole category from one query", () => {
+test("reads the whole category from one query", () => {
   assertEquals(posts.length, 14, "post count");
   assertEquals(
     posts.length,
@@ -45,7 +47,7 @@ Deno.test("reads the whole category from one query", () => {
   );
 });
 
-Deno.test("every post arrives complete", () => {
+test("every post arrives complete", () => {
   for (const field of ["synopsis", "author", "image", "ts"] as const) {
     assertEquals(
       posts.filter((p) => !p[field]).length,
@@ -59,7 +61,7 @@ Deno.test("every post arrives complete", () => {
   );
 });
 
-Deno.test("reads a known post's fields", () => {
+test("reads a known post's fields", () => {
   const p = bySlug("caching-is-all-you-need")!;
   assertEquals(p.title, "Caching is all you need", "title");
   // `date` is date-only, so the post lands on UTC midnight.
@@ -75,12 +77,12 @@ Deno.test("reads a known post's fields", () => {
   );
 });
 
-Deno.test("posts arrive newest first", () => {
+test("posts arrive newest first", () => {
   const dates = posts.map((p) => p.ts!);
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("degrades on a row missing its optional fields", () => {
+test("degrades on a row missing its optional fields", () => {
   const [post] = extractPosts({ result: [{ slug: "bare", title: "Bare" }] });
   assertEquals(post, {
     slug: "bare",
@@ -93,7 +95,7 @@ Deno.test("degrades on a row missing its optional fields", () => {
   }, "bare post");
 });
 
-Deno.test("survives a payload that is not what we asked for", () => {
+test("survives a payload that is not what we asked for", () => {
   assertEquals(extractPosts({}).length, 0, "no result key");
   assertEquals(extractPosts({ result: null }).length, 0, "null result");
   assertEquals(
@@ -107,7 +109,7 @@ Deno.test("survives a payload that is not what we asked for", () => {
 const feed = (query = "") =>
   buildFeed(posts, new URL(`https://feed.val.run/hex${query}`)).text();
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const body = await feed();
   assertEquals((body.match(/<item>/g) ?? []).length, 14, "all posts");
   assert(
@@ -127,7 +129,7 @@ Deno.test("serves the feed", async () => {
   assert(body.includes("<category>Engineering</category>"), "category");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   const body = await feed("?category=product&limit=5&utm_source=x");
   assert(
     body.includes('href="https://feed.val.run/hex" rel="self"'),
@@ -148,7 +150,7 @@ const SAMPLE_ITEM: Post = {
   categories: ["Engineering"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -177,12 +179,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   const xml = renderRss({
     title: "T",
     description: "d",
@@ -194,7 +195,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
 
-Deno.test("omits optional elements when the record lacks them", () => {
+test("omits optional elements when the record lacks them", () => {
   const bare: Post = {
     slug: "bare",
     title: "Bare",

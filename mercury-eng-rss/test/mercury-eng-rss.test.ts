@@ -6,9 +6,11 @@
  *   curl -sL https://mercury.com/blog/announcing-ghciwatch \
  *     -o mercury-post-ghciwatch.html
  *
- * Run: deno test --allow-read test/mercury-eng-rss.test.ts
+ * Run: node --test test/mercury-eng-rss.test.ts
  */
 
+import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   buildFeed,
   extractDetail,
@@ -18,15 +20,15 @@ import {
 } from "../mercury-eng-rss.ts";
 import { assert, assertEquals } from "../../common/assert.ts";
 
-const searchHtml = await Deno.readTextFile(
-  new URL("./mercury-eng-search.html", import.meta.url),
+const searchHtml = await readFile(
+  new URL("./mercury-eng-search.html", import.meta.url), "utf8",
 );
-const postHtml = await Deno.readTextFile(
-  new URL("./mercury-post-ghciwatch.html", import.meta.url),
+const postHtml = await readFile(
+  new URL("./mercury-post-ghciwatch.html", import.meta.url), "utf8",
 );
 const stubs = extractIndex(searchHtml, "Eng Blog");
 
-Deno.test("extracts every Eng Blog post from the listing", () => {
+test("extracts every Eng Blog post from the listing", () => {
   // The listing shows all 9; /blog/topics/engineering-blog returns the same
   // set, so there is no pagination to follow.
   assertEquals(stubs.length, 9, "post count");
@@ -42,7 +44,7 @@ Deno.test("extracts every Eng Blog post from the listing", () => {
   );
 });
 
-Deno.test("takes authors from the listing, which covers every post", () => {
+test("takes authors from the listing, which covers every post", () => {
   // Half these posts have no JSON-LD Person node, so the listing is the source.
   assert(stubs.every((s) => s.author), "every stub has an author");
   const ghci = stubs.find((s) => s.slug === "announcing-ghciwatch");
@@ -51,7 +53,7 @@ Deno.test("takes authors from the listing, which covers every post", () => {
   assertEquals(ghci?.categories, [], "cards carry no categories");
 });
 
-Deno.test("matches a topic by display name, slug, or plus-form", () => {
+test("matches a topic by display name, slug, or plus-form", () => {
   for (const spelling of ["Eng Blog", "eng blog", "eng-blog"]) {
     assertEquals(
       extractIndex(searchHtml, spelling).length,
@@ -72,7 +74,7 @@ Deno.test("matches a topic by display name, slug, or plus-form", () => {
   );
 });
 
-Deno.test("reads date, description and image from a post page", () => {
+test("reads date, description and image from a post page", () => {
   const detail = extractDetail(postHtml);
   assertEquals(detail.ts, Date.parse("2024-07-15T06:00:00+01:00"), "ts");
   assert(
@@ -88,7 +90,7 @@ Deno.test("reads date, description and image from a post page", () => {
   assert(detail.image.includes("&fit=crop"), "query params survive decoding");
 });
 
-Deno.test("survives a post page with no usable metadata", () => {
+test("survives a post page with no usable metadata", () => {
   const detail = extractDetail(
     "<html><head></head><body>nothing here</body></html>",
   );
@@ -99,7 +101,7 @@ Deno.test("survives a post page with no usable metadata", () => {
   );
 });
 
-Deno.test("reads a card's topic, title and authors only from that card", () => {
+test("reads a card's topic, title and authors only from that card", () => {
   const card = (slug: string, topic: string, author: string) =>
     `<a href="/blog/topics/${topic}"><span>${topic}</span></a>` +
     `<a data-analytics-event-name="blog-article" href="/blog/${slug}"><span><h2>${slug} &amp; co</h2></span></a>` +
@@ -145,7 +147,7 @@ const feed = async (query = "") => {
 
 const itemCount = (xml: string) => (xml.match(/<item>/g) ?? []).length;
 
-Deno.test("serves the feed", async () => {
+test("serves the feed", async () => {
   const { status, body } = await feed("");
   assertEquals(status, 200, "status");
   assertEquals(itemCount(body), 9, "all posts");
@@ -168,14 +170,14 @@ Deno.test("serves the feed", async () => {
   assert(body.includes("<category>Eng Blog</category>"), "topic as a category");
 });
 
-Deno.test("orders items newest first", async () => {
+test("orders items newest first", async () => {
   const dates = [...(await feed("")).body.matchAll(/<pubDate>([^<]+)</g)].map((
     m,
   ) => Date.parse(m[1]));
   assertEquals(dates, [...dates].sort((a, b) => b - a), "descending by date");
 });
 
-Deno.test("self-link is canonical, ignoring junk query params", async () => {
+test("self-link is canonical, ignoring junk query params", async () => {
   // ?topic= and ?limit= are gone; passing them should change nothing.
   const { body } = await feed("?topic=personal-finance&limit=5&utm_source=x");
   assert(
@@ -198,7 +200,7 @@ const SAMPLE_ITEM: Post = {
   categories: ["Inside Mercury"],
 };
 
-Deno.test("renders XML-safe output", () => {
+test("renders XML-safe output", () => {
   const bell = String.fromCharCode(7);
   const xml = renderRss({
     title: "Feed & <friends>",
@@ -229,12 +231,11 @@ Deno.test("renders XML-safe output", () => {
     feedUrl: FEED_URL,
     items: [{ ...SAMPLE_ITEM, title: `Bell${bell}here` }],
   });
-  // deno-lint-ignore no-control-regex
   assert(!/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(dirty), "control chars stripped");
   assert(dirty.includes("Bellhere"), "and the rest of the title is kept");
 });
 
-Deno.test("a CDATA breakout in the source cannot escape the section", () => {
+test("a CDATA breakout in the source cannot escape the section", () => {
   // "]]>" inside a title would end the CDATA early and corrupt the document;
   // the library splits it, and this pins that it still does.
   const xml = renderRss({
@@ -247,7 +248,7 @@ Deno.test("a CDATA breakout in the source cannot escape the section", () => {
   assert(xml.includes("]]]]><![CDATA[>"), "breakout split");
   assert(!/\]\]>\s*after/.test(xml), "no early termination");
 });
-Deno.test("omits optional elements when the post lacks them", () => {
+test("omits optional elements when the post lacks them", () => {
   const xml = renderRss({
     title: "T",
     description: "D",

@@ -1,7 +1,7 @@
 /**
  * Live link check for the Hex feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/hex-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/hex-engineering-rss.linkcheck.test.ts
  */
 
 import { extractPosts } from "../hex-engineering-rss.ts";

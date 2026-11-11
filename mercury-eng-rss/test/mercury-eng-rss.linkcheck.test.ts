@@ -1,7 +1,7 @@
 /**
  * Live link check for the Mercury feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/mercury-eng-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/mercury-eng-rss.linkcheck.test.ts
  */
 
 import {

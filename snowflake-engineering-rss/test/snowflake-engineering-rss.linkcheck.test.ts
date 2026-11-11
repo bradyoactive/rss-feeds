@@ -1,7 +1,7 @@
 /**
  * Live link check for the Snowflake feed. See ../../common/linkcheck.ts.
  *
- *   deno test --allow-read --allow-net test/snowflake-engineering-rss.linkcheck.test.ts
+ *   LIVE=1 node --test test/snowflake-engineering-rss.linkcheck.test.ts
  */
 
 import { buildFeed, extractPosts } from "../snowflake-engineering-rss.ts";
