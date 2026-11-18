@@ -25,6 +25,13 @@
  * page at /event/<id>. Sold-out tapings are left out: the feed is for finding
  * tickets, and a third of the listing at any time is already gone.
  *
+ * Daytime talk shows are left out too (see DAYTIME): they are most of the
+ * listing — The View alone tapes nearly every weekday — and this feed is for
+ * late-night shows, specials and screenings. The API has no genre field and
+ * taping time does not separate them (Tamron Hall tapes at 4 PM, Seth Meyers at
+ * 2 PM), so the shows are named. Matching on the title rather than the project
+ * id keeps a show out across seasons, which 1iota gives new project ids.
+ *
  * PUBLISHED_AT: the API has no "posted" timestamp, and the taping time is the
  * wrong thing to date an item by — it would sort the furthest-off taping to the
  * top and make every new item appear to come from the future. So items carry
@@ -50,6 +57,18 @@ const CACHE_SECONDS = 60 * 60;
 /** The five boroughs, as 1iota names a location: "<place>, NY". */
 const NYC =
   /^(new york( city)?|manhattan|brooklyn|queens|(the )?bronx|staten island),\s*ny$/i;
+
+/**
+ * Daytime talk shows that tape, or have taped, in New York, by how 1iota
+ * starts their titles: "The View + The Weekend View - taping ends at 1:30p!"
+ * is The View, and "Tamron Hall - Live Studio Audience -" is Tamron Hall.
+ */
+export const DAYTIME =
+  /^(the view|tamron hall|the drew barrymore show|live with kelly|the kelly clarkson show|sherri|the jennifer hudson show|good morning america|gma3?\b|today\b|the today show)/i;
+
+export function isDaytime(show: string): boolean {
+  return DAYTIME.test(show);
+}
 
 export interface Taping {
   id: number;
@@ -93,7 +112,7 @@ export function buildFeed(tapings: Taping[], url: URL): Response {
   const xml = renderRss({
     title: "1iota — New York City",
     description:
-      "Free tickets to TV tapings and screenings in New York City, from 1iota.",
+      "Free tickets to late-night TV tapings, specials and screenings in New York City, from 1iota.",
     siteLink: PAGE,
     feedUrl: `${url.origin}${url.pathname}`,
     items: tapings,
@@ -151,6 +170,7 @@ export function extractTapings(
       : [];
     if (!at.some((l) => locations.has(l))) continue;
     if (row.isSoldOut === true) continue;
+    if (isDaytime(show)) continue;
 
     // startDateUtc carries no zone designator, but it is UTC: 2:00 PM in New
     // York is "T19:00:00" in December. Without the Z it would parse as local.

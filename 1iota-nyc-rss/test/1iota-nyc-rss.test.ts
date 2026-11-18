@@ -17,6 +17,7 @@ import {
   buildFeed,
   eventUrl,
   extractTapings,
+  isDaytime,
   itemTitle,
   nycLocationIds,
   renderRss,
@@ -84,8 +85,8 @@ test("reads the NYC tapings that can still be booked, and only those", () => {
     e.projectLocationIds.some((l) => NYC.has(l)),
   );
   assertEquals(nyc.length, 116, "in New York");
-  assertEquals(tapings.length, 74, "in New York and not sold out");
-  assertEquals(new Set(tapings.map((t) => t.id)).size, 74, "unique");
+  assertEquals(tapings.length, 24, "in New York, not sold out, not daytime");
+  assertEquals(new Set(tapings.map((t) => t.id)).size, 24, "unique");
   assert(
     !tapings.some((t) => /CA$/.test(t.where)),
     "no Burbank or Los Angeles tapings",
@@ -138,18 +139,18 @@ test("tidies the dashes and spaces editors leave in titles", () => {
   const [t] = extractTapings(
     [
       record({
-        title: "Tamron Hall - Live Studio Audience -  ",
+        title: "Screening + Q&A -  ",
         subTitle: "+ View Your Deal!",
       }),
     ],
     NYC,
     CAPTURED,
   );
-  assertEquals(t.show, "Tamron Hall - Live Studio Audience");
+  assertEquals(t.show, "Screening + Q&A");
   assertEquals(t.subtitle, "View Your Deal!");
   assertEquals(
     itemTitle(t),
-    "Tamron Hall - Live Studio Audience: View Your Deal! — Tue, Dec 01, 10:00 AM",
+    "Screening + Q&A: View Your Deal! — Tue, Dec 01, 10:00 AM",
   );
 });
 
@@ -185,7 +186,7 @@ const feed = () => buildFeed(tapings, new URL(`${FEED_URL}?junk=1`)).text();
 
 test("serves the listing, one item per taping", async () => {
   const body = await feed();
-  assertEquals((body.match(/<item>/g) ?? []).length, 74, "every taping");
+  assertEquals((body.match(/<item>/g) ?? []).length, 24, "every taping");
   assert(body.includes("<link>https://1iota.com/new-york</link>"), "channel");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
 });
@@ -254,4 +255,45 @@ test("renders XML-safe output", () => {
   assert(!xml.includes(bell), "control characters stripped");
   assert(xml.includes("Feed &amp; &lt;friends&gt;"), "channel title escaped");
   assert(xml.includes("Guests: Ada &amp; Grace"), "guest names escaped");
+});
+
+test("leaves daytime talk shows out, however 1iota decorates the title", () => {
+  const daytime = [
+    "The View",
+    "The View + The Weekend View - taping ends at 1:30p!",
+    "The View - TOYS FOR TOTS",
+    "Tamron Hall - Live Studio Audience",
+    "The Drew Barrymore Show",
+    "LIVE with Kelly & Mark",
+    "The Kelly Clarkson Show",
+    "Sherri",
+    "Good Morning America",
+  ];
+  for (const s of daytime) assert(isDaytime(s), `"${s}" is daytime`);
+
+  const kept = [
+    "Late Night with Seth Meyers",
+    "The Tonight Show",
+    "The Daily Show",
+    "Last Week Tonight with John Oliver",
+    "NBC's Countdown to Macy's Thanksgiving Day Parade 2026",
+    "Screening + Q&A",
+    "New York Special Screening",
+    "Saturday Night Live",
+    "The Late Show with Stephen Colbert",
+  ];
+  for (const s of kept) assert(!isDaytime(s), `"${s}" is kept`);
+
+  const shows = new Set(tapings.map((t) => t.show));
+  assertEquals(
+    [...shows].sort(),
+    [
+      "Late Night with Seth Meyers",
+      "NBC's Countdown to Macy's Thanksgiving Day Parade 2026",
+      "Screening + Q&A",
+      "The Daily Show",
+      "The Tonight Show",
+    ],
+    "what survives from the capture",
+  );
 });
