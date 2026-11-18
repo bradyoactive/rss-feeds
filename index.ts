@@ -3,6 +3,7 @@
  * own default-exported handler; this file only routes `/<feed-name>` to it.
  */
 
+import oneIotaNycRss from "./1iota-nyc-rss/1iota-nyc-rss.ts";
 import anthropicEngineeringRss from "./anthropic-engineering-rss/anthropic-engineering-rss.ts";
 import asanaEngineeringRss from "./asana-engineering-rss/asana-engineering-rss.ts";
 import balkonQaRss from "./balkon-qa-rss/balkon-qa-rss.ts";
@@ -39,6 +40,7 @@ type Handler = (
 ) => Promise<Response>;
 
 const feeds: Record<string, Handler> = {
+  "1iota-nyc-rss": oneIotaNycRss,
   "anthropic-engineering-rss": anthropicEngineeringRss,
   "asana-engineering-rss": asanaEngineeringRss,
   "balkon-qa-rss": balkonQaRss,
