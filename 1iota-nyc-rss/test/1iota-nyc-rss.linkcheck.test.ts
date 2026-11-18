@@ -4,7 +4,12 @@
  *   LIVE=1 node --test 1iota-nyc-rss/test/1iota-nyc-rss.linkcheck.test.ts
  */
 
-import { extractTapings, eventUrl, nycLocationIds } from "../1iota-nyc-rss.ts";
+import {
+  eventUrl,
+  extractTapings,
+  guestsByEvent,
+  nycLocationIds,
+} from "../1iota-nyc-rss.ts";
 import {
   assertAllServed,
   jsonFixture,
@@ -23,17 +28,38 @@ async function get(path: string) {
 }
 
 async function live() {
-  const [events, locations] = await Promise.all([
+  const [events, locations, appearances] = await Promise.all([
     get("/api/event/list"),
     get("/api/locations"),
+    get("/api/celeb/appearances"),
   ]);
-  return extractTapings(events, nycLocationIds(locations));
+  return extractTapings(
+    events,
+    nycLocationIds(locations),
+    Date.now(),
+    guestsByEvent(appearances),
+  );
 }
 
-liveTest("both endpoints still answer, with New York tapings", async () => {
-  const tapings = await live();
-  if (tapings.length < 5) {
-    throw new Error(`only ${tapings.length} NYC tapings — suspiciously few`);
+liveTest(
+  "all three endpoints still answer, with New York tapings",
+  async () => {
+    // Few items is normal now — late-night tapings wait for guests — but none at
+    // all means the filters or the API have changed under the feed.
+    const tapings = await live();
+    if (tapings.length === 0) throw new Error("no NYC tapings survived");
+  },
+);
+
+liveTest("the appearances feed still names guests by event", async () => {
+  // The late-night filter depends on it. If its rows stop carrying eventId and
+  // name, every late-night taping silently loses its guests and drops out.
+  const rows = await get("/api/celeb/appearances");
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error("/api/celeb/appearances returned no rows");
+  }
+  if (guestsByEvent(rows).size === 0) {
+    throw new Error("its rows no longer carry eventId and name");
   }
 });
 

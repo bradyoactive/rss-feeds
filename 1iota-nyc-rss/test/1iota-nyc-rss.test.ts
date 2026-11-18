@@ -1,9 +1,10 @@
 /**
- * Offline tests for the 1iota NYC feed. The fixtures are the two API responses
- * the feed reads, captured 2026-11-18. Refresh with:
+ * Offline tests for the 1iota NYC feed. The fixtures are the three API
+ * responses the feed reads, captured together on 2026-11-18. Refresh with:
  *
  *   curl -s https://prod-tickets.1iota.com/api/event/list -o 1iota-event-list.json
  *   curl -s https://prod-tickets.1iota.com/api/locations -o 1iota-locations.json
+ *   curl -s https://prod-tickets.1iota.com/api/celeb/appearances -o 1iota-appearances.json
  *
  * The counts below move whenever they are recaptured — this is a rolling
  * calendar — and so does CAPTURED, which stands in for "now".
@@ -17,7 +18,9 @@ import {
   buildFeed,
   eventUrl,
   extractTapings,
+  guestsByEvent,
   isDaytime,
+  isLateNight,
   itemTitle,
   nycLocationIds,
   renderRss,
@@ -30,11 +33,13 @@ const load = async (name: string) =>
 
 const eventsFixture = await load("1iota-event-list.json");
 const locationsFixture = await load("1iota-locations.json");
+const appearancesFixture = await load("1iota-appearances.json");
 
 /** Just before the fixture was captured, so nothing in it has started yet. */
 const CAPTURED = Date.parse("2026-11-18T22:00:00Z");
 const NYC = nycLocationIds(locationsFixture);
-const tapings = extractTapings(eventsFixture, NYC, CAPTURED);
+const APPEARANCES = guestsByEvent(appearancesFixture);
+const tapings = extractTapings(eventsFixture, NYC, CAPTURED, APPEARANCES);
 const taping = (id: number) => tapings.find((t) => t.id === id)!;
 
 const FEED_URL = "https://feeds.brady.town/1iota-nyc-rss";
@@ -85,8 +90,12 @@ test("reads the NYC tapings that can still be booked, and only those", () => {
     e.projectLocationIds.some((l) => NYC.has(l)),
   );
   assertEquals(nyc.length, 116, "in New York");
-  assertEquals(tapings.length, 24, "in New York, not sold out, not daytime");
-  assertEquals(new Set(tapings.map((t) => t.id)).size, 24, "unique");
+  assertEquals(
+    tapings.length,
+    4,
+    "bookable, not daytime, guests if late-night",
+  );
+  assertEquals(new Set(tapings.map((t) => t.id)).size, 4, "unique");
   assert(
     !tapings.some((t) => /CA$/.test(t.where)),
     "no Burbank or Los Angeles tapings",
@@ -98,17 +107,18 @@ test("reads the NYC tapings that can still be booked, and only those", () => {
 });
 
 test("reads every field of a known taping", () => {
-  const t = taping(98316);
+  const t = taping(95981);
   assertEquals(t.show, "Late Night with Seth Meyers");
   assertEquals(t.subtitle, "");
-  assertEquals(t.day, "Tue, Dec 08");
+  assertEquals(t.guests, ["Adam Driver", "Betty Gilpin"]);
+  assertEquals(t.day, "Mon, Nov 23");
   assertEquals(t.time, "2:00 PM");
   assertEquals(t.where, "New York, NY");
   assertEquals(t.age, "16+");
   assertEquals(t.action, "Join Waitlist");
   assertEquals(
     t.start,
-    Date.parse("2026-12-08T19:00:00Z"),
+    Date.parse("2026-11-23T19:00:00Z"),
     "startDateUtc is UTC: 2 PM Eastern",
   );
   assertEquals(t.imageType, "image/jpeg", "type read past the /w=350 resize");
@@ -186,7 +196,7 @@ const feed = () => buildFeed(tapings, new URL(`${FEED_URL}?junk=1`)).text();
 
 test("serves the listing, one item per taping", async () => {
   const body = await feed();
-  assertEquals((body.match(/<item>/g) ?? []).length, 24, "every taping");
+  assertEquals((body.match(/<item>/g) ?? []).length, 4, "every taping");
   assert(body.includes("<link>https://1iota.com/new-york</link>"), "channel");
   assert(body.includes(`href="${FEED_URL}" rel="self"`), "bare self-link");
 });
@@ -194,10 +204,10 @@ test("serves the listing, one item per taping", async () => {
 test("links each taping to its own page, which is also its guid", async () => {
   const body = await feed();
   assert(
-    body.includes(`<guid isPermaLink="true">${eventUrl(98316)}</guid>`),
+    body.includes(`<guid isPermaLink="true">${eventUrl(95981)}</guid>`),
     "guid",
   );
-  assert(body.includes(`<link>${eventUrl(98316)}</link>`), "link");
+  assert(body.includes(`<link>${eventUrl(95981)}</link>`), "link");
 });
 
 test("orders newest-posted first and carries no invented dates", async () => {
@@ -291,9 +301,100 @@ test("leaves daytime talk shows out, however 1iota decorates the title", () => {
       "Late Night with Seth Meyers",
       "NBC's Countdown to Macy's Thanksgiving Day Parade 2026",
       "Screening + Q&A",
-      "The Daily Show",
-      "The Tonight Show",
     ],
     "what survives from the capture",
+  );
+});
+
+test("keeps a late-night taping only once a guest is announced", () => {
+  for (const s of [
+    "The Tonight Show",
+    "Late Night with Seth Meyers",
+    "The Daily Show",
+    "The Late Show with Stephen Colbert",
+    "Jimmy Kimmel Live!",
+  ]) {
+    assert(isLateNight(s), `"${s}" is late-night`);
+  }
+  for (const s of [
+    "Screening + Q&A",
+    "NBC's Countdown to Macy's",
+    "The View",
+  ]) {
+    assert(!isLateNight(s), `"${s}" is not`);
+  }
+
+  const out = extractTapings(
+    [
+      record({ eventId: 1, title: "The Tonight Show" }),
+      record({
+        eventId: 2,
+        title: "The Tonight Show",
+        guests: [{ name: "Ada Lovelace" }],
+      }),
+      record({ eventId: 3, title: "The Daily Show" }),
+      record({ eventId: 4, title: "Screening + Q&A" }),
+    ],
+    NYC,
+    CAPTURED,
+    new Map([[3, ["Grace Hopper"]]]),
+  );
+  assertEquals(
+    out.map((t) => [t.id, t.guests]),
+    [
+      [2, ["Ada Lovelace"]],
+      [3, ["Grace Hopper"]],
+      [4, []],
+    ],
+    "guests from either source count; non-late-night needs none",
+  );
+
+  const lateNight = eventsFixture.filter(
+    (e: { title: string; projectLocationIds: number[]; isSoldOut: boolean }) =>
+      isLateNight(e.title.trim()) &&
+      !e.isSoldOut &&
+      e.projectLocationIds.some((l) => NYC.has(l)),
+  );
+  assertEquals(lateNight.length, 22, "bookable late-night tapings captured");
+  assertEquals(
+    tapings.filter((t) => isLateNight(t.show)).map((t) => t.id),
+    [95980, 95981],
+    "of which these two had guests",
+  );
+});
+
+test("merges guests from the appearances feed without repeating anyone", () => {
+  const altruists = taping(97690);
+  assertEquals(
+    altruists.guests,
+    ["Anthony Boyle", "Ben McKenzie", "Graham Moore", "Julia Garner"],
+    "named only by /api/celeb/appearances",
+  );
+  const [t] = extractTapings(
+    [record({ guests: [{ name: "La La Anthony " }, { name: "Megan Hilty" }] })],
+    NYC,
+    CAPTURED,
+    new Map([[1, ["La La  Anthony", "megan hilty", "John Legend"]]]),
+  );
+  assertEquals(t.guests, ["La La Anthony", "Megan Hilty", "John Legend"]);
+});
+
+test("puts the guests in the title and a category per guest", async () => {
+  assertEquals(
+    itemTitle(taping(95981)),
+    "Late Night with Seth Meyers: Adam Driver, Betty Gilpin — Mon, Nov 23, 2:00 PM",
+  );
+  assertEquals(
+    itemTitle(taping(97690)),
+    "Screening + Q&A: The Altruists (Anthony Boyle, Ben McKenzie, Graham Moore, Julia Garner) — Thu, Nov 19, 6:30 PM",
+    "after the subtitle when there is one",
+  );
+  const body = await buildFeed(tapings, new URL(FEED_URL)).text();
+  for (const name of ["Adam Driver", "Betty Gilpin", "Julia Garner"]) {
+    assert(body.includes(`<category>${name}</category>`), `${name} category`);
+  }
+  assert(
+    body.includes("<p>Guests: Adam Driver, Betty Gilpin</p>"),
+    "and in the body",
   );
 });

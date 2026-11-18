@@ -32,6 +32,20 @@
  * 2 PM), so the shows are named. Matching on the title rather than the project
  * id keeps a show out across seasons, which 1iota gives new project ids.
  *
+ * Late-night shows (see LATE_NIGHT) are kept only once 1iota has named a guest
+ * for that taping: the guest is what makes one Seth Meyers taping worth more
+ * than the next, and most are posted weeks before anyone is booked. A taping
+ * whose guests are announced later appears in the feed at that point.
+ *
+ * WHO: guests come from two places, merged. Each event's own `guests`, and
+ * /api/celeb/appearances, which feeds the homepage's "Upcoming guests" strip
+ * and is the only place some names are recorded — on 2026-11-18 it named 71
+ * appearances the events' own lists did not, including the stars of a NYC
+ * screening. It is a third request (~55 KB) but it is the complete answer to
+ * "who is announced", which the late-night filter depends on. The names go in
+ * the item title, the body, and one <category> each so a reader can filter on
+ * them.
+ *
  * PUBLISHED_AT: the API has no "posted" timestamp, and the taping time is the
  * wrong thing to date an item by — it would sort the furthest-off taping to the
  * top and make every new item appear to come from the future. So items carry
@@ -47,6 +61,7 @@ const PAGE = `${SITE}/new-york`;
 const API = "https://prod-tickets.1iota.com";
 const EVENTS = `${API}/api/event/list`;
 const LOCATIONS = `${API}/api/locations`;
+const APPEARANCES = `${API}/api/celeb/appearances`;
 
 /**
  * Tapings are posted a few times a week and fill up over days, so an hour is
@@ -68,6 +83,18 @@ export const DAYTIME =
 
 export function isDaytime(show: string): boolean {
   return DAYTIME.test(show);
+}
+
+/**
+ * Late-night shows, which the feed keeps only when a guest is announced. The
+ * same set 1iota's homepage files under LATE NIGHT, plus the other late-night
+ * shows that tape in New York, by how their titles begin.
+ */
+export const LATE_NIGHT =
+  /^(the tonight show|late night with|the late show|the daily show|last week tonight|jimmy kimmel|after midnight|saturday night live|watch what happens live|real time with bill maher|gutfeld)/i;
+
+export function isLateNight(show: string): boolean {
+  return LATE_NIGHT.test(show);
 }
 
 export interface Taping {
@@ -96,11 +123,17 @@ export interface Taping {
 export default async function (req: Request): Promise<Response> {
   let tapings: Taping[];
   try {
-    const [events, locations] = await Promise.all([
+    const [events, locations, appearances] = await Promise.all([
       getJson(EVENTS),
       getJson(LOCATIONS),
+      getJson(APPEARANCES),
     ]);
-    tapings = extractTapings(events, nycLocationIds(locations));
+    tapings = extractTapings(
+      events,
+      nycLocationIds(locations),
+      Date.now(),
+      guestsByEvent(appearances),
+    );
   } catch (err) {
     return text(502, `Failed to fetch ${API}: ${err}`);
   }
@@ -148,6 +181,18 @@ export function nycLocationIds(payload: unknown): Set<number> {
   return ids;
 }
 
+/** Names per event id from /api/celeb/appearances, one row per appearance. */
+export function guestsByEvent(payload: unknown): Map<number, string[]> {
+  const out = new Map<number, string[]>();
+  for (const row of list(payload)) {
+    const id = Number(row.eventId);
+    const name = str(row.name);
+    if (!Number.isFinite(id) || !name) continue;
+    out.set(id, [...(out.get(id) ?? []), name]);
+  }
+  return out;
+}
+
 /**
  * Reads the tapings at `locations`, dropping sold-out ones and any that have
  * already started. The endpoint only lists upcoming tapings, but it is cached
@@ -157,6 +202,7 @@ export function extractTapings(
   payload: unknown,
   locations: Set<number>,
   now: number = Date.now(),
+  appearances: Map<number, string[]> = new Map(),
 ): Taping[] {
   const byId = new Map<number, Taping>();
 
@@ -180,6 +226,22 @@ export function extractTapings(
     );
     if (!Number.isFinite(start) || start < now) continue;
 
+    // Event's own list first, in 1iota's billing order, then any the
+    // appearances feed adds. Compared without case or spacing, since editors
+    // type the same name twice ("La La Anthony " and "La La Anthony").
+    const guests: string[] = [];
+    const seen = new Set<string>();
+    for (const name of [
+      ...list(row.guests).map((g) => str(g.name)),
+      ...(appearances.get(id) ?? []).map(str),
+    ]) {
+      const key = name.toLowerCase().replace(/\s+/g, " ");
+      if (!name || seen.has(key)) continue;
+      seen.add(key);
+      guests.push(name.replace(/\s+/g, " "));
+    }
+    if (isLateNight(show) && !guests.length) continue;
+
     // Not carried: the request-form switches (isGroupEnabled, maxTickets,
     // isPhotoRequired …). They change as a taping fills, and an item whose
     // content changes is one a reader re-marks unread.
@@ -193,9 +255,7 @@ export function extractTapings(
       time: str(row.when),
       where: str(row.where),
       age: str(row.age),
-      guests: list(row.guests)
-        .map((g) => str(g.name))
-        .filter(Boolean),
+      guests,
       description: str(row.description),
       action: str(row.buttonLabel),
       image,
@@ -233,7 +293,7 @@ export function renderRss(feed: {
       // link and the guid. No `date`: see PUBLISHED_AT above.
       link: eventUrl(t.id),
       description: clean(describe(t)),
-      category: [{ name: clean(t.show) }],
+      category: [t.show, ...t.guests].map((name) => ({ name: clean(name) })),
       image: t.image
         ? { url: t.image, type: t.imageType || undefined }
         : undefined,
@@ -244,11 +304,17 @@ export function renderRss(feed: {
 }
 
 /**
- * "The View: Thanksgiving Special! — Thu, Nov 26, 11:00 AM". The date belongs
- * in the title: a list of twelve items all called "The View" is unreadable.
+ * "Late Night with Seth Meyers: Adam Driver, Betty Gilpin — Mon, Nov 23,
+ * 2:00 PM". The guests and date belong in the title: they are what tells one
+ * taping of a show from the next, and a list of twelve items all called "Late
+ * Night with Seth Meyers" is unreadable. A subtitle, when there is one, comes
+ * first, with the guests after it in parentheses.
  */
 export function itemTitle(t: Taping): string {
-  const name = t.subtitle ? `${t.show}: ${t.subtitle}` : t.show;
+  const who = t.guests.join(", ");
+  let name = t.show;
+  if (t.subtitle) name += `: ${t.subtitle}${who ? ` (${who})` : ""}`;
+  else if (who) name += `: ${who}`;
   const when = [t.day, t.time].filter(Boolean).join(", ");
   return when ? `${name} — ${when}` : name;
 }
