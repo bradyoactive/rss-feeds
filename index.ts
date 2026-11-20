@@ -17,6 +17,7 @@ import lovableRss from "./lovable-rss/lovable-rss.ts";
 import mercuryEngRss from "./mercury-eng-rss/mercury-eng-rss.ts";
 import mistralNewsRss from "./mistral-news-rss/mistral-news-rss.ts";
 import modalEngineeringRss from "./modal-engineering-rss/modal-engineering-rss.ts";
+import movieTopStoriesRss from "./movie-top-stories-rss/movie-top-stories-rss.ts";
 import notionEngineeringRss from "./notion-engineering-rss/notion-engineering-rss.ts";
 import openaiEngineeringRss from "./openai-engineering-rss/openai-engineering-rss.ts";
 import pigeonsAndPlanesRss from "./pigeons-and-planes-rss/pigeons-and-planes-rss.ts";
@@ -54,6 +55,7 @@ const feeds: Record<string, Handler> = {
   "mercury-eng-rss": mercuryEngRss,
   "mistral-news-rss": mistralNewsRss,
   "modal-engineering-rss": modalEngineeringRss,
+  "movie-top-stories-rss": movieTopStoriesRss,
   "notion-engineering-rss": notionEngineeringRss,
   "openai-engineering-rss": openaiEngineeringRss,
   "pigeons-and-planes-rss": pigeonsAndPlanesRss,
