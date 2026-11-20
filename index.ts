@@ -21,6 +21,7 @@ import notionEngineeringRss from "./notion-engineering-rss/notion-engineering-rs
 import openaiEngineeringRss from "./openai-engineering-rss/openai-engineering-rss.ts";
 import pigeonsAndPlanesRss from "./pigeons-and-planes-rss/pigeons-and-planes-rss.ts";
 import posthogEngineeringRss from "./posthog-engineering-rss/posthog-engineering-rss.ts";
+import redditMoviesTopRss from "./reddit-movies-top-rss/reddit-movies-top-rss.ts";
 import retoolEngineeringRss from "./retool-engineering-rss/retool-engineering-rss.ts";
 import ripplingEngineeringRss from "./rippling-engineering-rss/rippling-engineering-rss.ts";
 import robinhoodTechRss from "./robinhood-tech-rss/robinhood-tech-rss.ts";
@@ -58,6 +59,7 @@ const feeds: Record<string, Handler> = {
   "openai-engineering-rss": openaiEngineeringRss,
   "pigeons-and-planes-rss": pigeonsAndPlanesRss,
   "posthog-engineering-rss": posthogEngineeringRss,
+  "reddit-movies-top-rss": redditMoviesTopRss,
   "retool-engineering-rss": retoolEngineeringRss,
   "rippling-engineering-rss": ripplingEngineeringRss,
   "robinhood-tech-rss": robinhoodTechRss,
